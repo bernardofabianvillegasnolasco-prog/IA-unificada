@@ -1,22 +1,27 @@
-export const MIS_BOTS = {"BF-LIDER":{nombre:"BF"}};
+export const MIS_BOTS = {
+  "BF-UNIVERSAL": { nombre:"IA BF UNIVERSAL" }
+};
+
 export async function responderConBotPropio(botId, prompt){
   const l = prompt.toLowerCase();
 
-  if(l.includes("raiz cuadrada")){
-    let m=l.match(/(\d+)/); if(m){ const n=parseFloat(m[0]); const r=Math.sqrt(n); return `La raiz cuadrada de ${n} es ${r.toFixed(4)}. Te explico, si multiplicas ${r.toFixed(4)} por ${r.toFixed(4)} te da ${n}, por eso es su raiz.`; }
+  let mat = l.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+  if(mat){
+    const a=parseFloat(mat[1]); const b=parseFloat(mat[2]);
+    return `La respuesta de ${a} por ${b} es ${a*b}. Multiplicas ${a} veces ${b} y te da ${a*b}.`;
   }
-  if(l.includes("ladrillo")||l.includes("tabique")||l.includes("pegar")||l.includes("muro")){
-    return `Te explico como pegar un ladrillo facil, como si estuvieramos en obra.\n\nPrimero alista hilo, plomada y nivel. Pones dos estacas y amarras el hilo bien tenso. Para que quede derecho usa la escuadra 3 4 5, marcas 60 cm de un lado, 80 del otro y la diagonal te debe dar 100 cm.\n\nLuego la mezcla, un bote de cemento por cuatro de arena, revuelves en seco y le echas agua poco a poco hasta que quede pastosa, no aguada.\n\nMoja el tabique 10 minutos, si no lo mojas te chupa el agua y no pega.\n\nYa para pegar, pones una cama de mezcla de un centimetro y medio, asientas el tabique, le das golpecitos con el mango y dejas un centimetro de junta. Cada hilada va cuatrapeada, o sea la de arriba a la mitad de la de abajo. Cada tres metros pon un castillo.\n\nPara un metro cuadrado ocupas 25 tabiques de 7 por 14 por 28.\n\nSi me dices cuanto mide tu muro te digo exacto cuantos ocupas.`;
-  }
-  if(l.includes("que es el sexo")){
-    return `El sexo es la diferencia biologica entre hombre y mujer y tambien la relacion intima entre dos personas cuando hay confianza y consentimiento. Biologicamente se define por cromosomas y organos, y en pareja es una forma de mostrar afecto y tambien para tener hijos. Si quieres te explico con respeto sobre cuidado, proteccion y consentimiento.`;
+  let raiz = l.match(/raiz cuadrada de\s*(\d+)/i);
+  if(raiz){ const n=parseFloat(raiz[1]); const r=Math.sqrt(n); return `La raiz cuadrada de ${n} es ${r.toFixed(4)}, porque ${r.toFixed(4)} por ${r.toFixed(4)} te da ${n}.`; }
+
+  if(l.includes("ladrillo")||l.includes("tabique")||l.includes("pegar")){
+    return `Te explico como pegar un ladrillo facil. Alista hilo, plomada y nivel. Traza con hilo tenso y escuadra 3 4 5. Mezcla un bote de cemento por cuatro de arena con agua hasta pastosa. Moja el tabique 10 minutos. Pon cama de 1.5 cm, asienta con golpecitos, deja 1 cm de junta. Cada hilada va cuatrapeada y cada tres metros castillo. Para un metro ocupas 25 tabiques.`;
   }
 
   try{
-    const q = prompt.split(" ").filter(w=>w.length>3).slice(0,3).join(" ");
-    const r = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`,{signal:AbortSignal.timeout(3000)});
-    if(r.ok){ const j=await r.json(); if(j.extract){ return j.extract.replace(/\*\*/g,"").slice(0,700); } }
+    const q = prompt.split(" ").filter(w=>w.length>3).slice(0,3).join(" ") || prompt;
+    const r = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`,{headers:{"User-Agent":"BF-UNIVERSAL"},signal:AbortSignal.timeout(3000)});
+    if(r.ok){ const j=await r.json(); if(j.extract) return j.extract.replace(/\*\*/g,"").slice(0,700); }
   }catch{}
 
-  return `Me preguntas por ${prompt}. Te lo explico simple y directo, como platicando con un amigo, paso a paso y sin rodeos. Dime que parte quieres que profundice y te lo detallo.`;
+  return `Me preguntas por ${prompt}. Te lo explico simple y directo, como platicando. Dime que quieres profundizar.`;
 }
