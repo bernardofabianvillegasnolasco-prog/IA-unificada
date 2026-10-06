@@ -3,40 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF v3.2 UNIVERSAL</title>
+<title>IA BF v5.0 AVANZADA</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:15px}
-.logo-wrap{width:90px;height:90px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:28px;margin:12px}
-h1{font-size:28px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.lema{color:#00ff88;font-weight:bold;margin-bottom:12px;font-size:14px}
-.input-box{width:100%;max-width:700px;display:flex;gap:8px;margin:12px 0}
-input{flex:1;padding:13px;border-radius:12px;border:1px solid #333;background:#111;color:#fff}
-button{padding:13px 18px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
-#result{width:100%;max-width:700px;display:grid;gap:10px}
-.card{background:#111;border:1px solid #222;border-radius:14px;padding:14px}
+body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px}
+.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:26px;margin:10px;box-shadow:0 0 25px #00ff88}
+h1{font-size:26px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lema{color:#00ff88;font-weight:bold;font-size:12px;margin-bottom:10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.tab{padding:8px 12px;border-radius:18px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:11px}
+.tab.active{background:#00ff88;color:#000;font-weight:bold}
+.box{width:100%;max-width:720px;display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+input{flex:1;min-width:200px;padding:12px;border-radius:12px;border:1px solid #333;background:#111;color:#fff}
+button{padding:12px 16px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;font-size:12px}
+button.sec{background:#222;color:#fff;border:1px solid #333}
+#result{width:100%;max-width:720px;display:grid;gap:10px}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:13px;font-size:14px}
 .card.lider{border-left:3px solid #00ff88}
 .card.supremo{border-left:3px solid #00aaff}
+.card.vision{border-left:3px solid #ffaa00}
+.drop{width:100%;border:2px dashed #333;border-radius:12px;padding:15px;text-align:center;color:#888;font-size:12px;margin-top:8px}
+#memoria{font-size:10px;color:#555;margin-top:10px}
 </style>
 </head>
 <body>
-<div class="logo-wrap">BF</div>
-<h1>IA BF v3.2</h1>
-<div class="lema">UNIVERSAL - Todos los idiomas, ecuaciones y teorías</div>
-<div class="input-box">
-<input id="prompt" placeholder="Ej: 2+2, E=mc2, traduce hola, teoría big bang..." onkeypress="if(event.key==='Enter') preguntar()">
-<button onclick="preguntar()">Responder</button>
+<div class="logo">BF</div>
+<h1>IA BF v5.0</h1>
+<div class="lema">AVANZADA - Memoria + Visión + Voz + RAG + Agentes</div>
+<div class="tabs">
+<button class="tab active" onclick="setTab('chat')">💬 Chat</button>
+<button class="tab" onclick="setTab('vision')">👁️ Visión Foto</button>
+<button class="tab" onclick="setTab('voz')">🎤 Voz</button>
+<button class="tab" onclick="setTab('memoria')">🧠 Memoria</button>
+<button class="tab" onclick="setTab('agente')">🤖 Agente</button>
 </div>
+<div class="box">
+<input id="prompt" placeholder="Ej: 2+2, x+2=5, foto de tarea..." onkeypress="if(event.key==='Enter') ejecutar()">
+<button onclick="ejecutar()">Enviar</button>
+<button class="sec" onclick="hablar()">🎤 Hablar</button>
+<button class="sec" onclick="leerUltima()">🔊 Leer</button>
+</div>
+<div class="drop" id="drop">📸 Arrastra foto de tarea aquí o <input type="file" id="file" accept="image/*" style="display:inline"> - OCR gratis lee 2+2 de tu foto</div>
 <div id="result"></div>
+<div id="memoria"></div>
 <script>
-async function preguntar(){
+let modo='chat';
+let historial=JSON.parse(localStorage.getItem('bf_memoria')||'[]');
+let ultimaRespuesta="";
+function setTab(m){modo=m; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active');}
+function guardarMemoria(p,r){historial.push({p,r,t:Date.now()}); if(historial.length>20) historial.shift(); localStorage.setItem('bf_memoria',JSON.stringify(historial)); mostrarMemoria();}
+function mostrarMemoria(){document.getElementById('memoria').innerHTML=`Memoria BF: ${historial.length} recuerdos | ${historial.slice(-3).map(h=>h.p.slice(0,20)).join(' | ')}`;}
+async function ejecutar(){
  const p=document.getElementById('prompt').value.trim(); if(!p) return;
- const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 Pensando universal...</p></div>';
- const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
- const d=await r.json();
- resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+ const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 BF v5.0 pensando mas arriba...</p></div>';
+ try{
+  if(modo==='vision' || modo==='chat'){
+    const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p, historial: historial.map(h=>h.p)})});
+    const d=await r.json();
+    const html=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+    resDiv.innerHTML=html;
+    ultimaRespuesta=d.x2?d.x2[0].respuesta:""; guardarMemoria(p,ultimaRespuesta);
+  } else if(modo==='voz'){
+    const r=await fetch('/api/avanzada',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'voz', prompt:p})});
+    const d=await r.json(); resDiv.innerHTML=`<div class="card vision"><h3>🎤 Voz BF</h3><p>${d.resultado}</p><button onclick="leerTexto('${p}')">🔊 Reproducir voz</button></div>`;
+  } else if(modo==='memoria'){
+    resDiv.innerHTML=`<div class="card"><h3>🧠 Memoria Largo Plazo</h3>${historial.map(h=>`<p><b>Tú:</b> ${h.p}<br><b>BF:</b> ${h.r.slice(0,100)}</p>`).join('') || 'Sin recuerdos aún'}</div>`;
+  } else if(modo==='agente'){
+    const r=await fetch('/api/avanzada',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'agente', prompt:p})});
+    const d=await r.json(); resDiv.innerHTML=`<div class="card vision"><h3>🤖 Agente Autónomo BF</h3><p>${d.resultado}</p><p style="color:#888">Flujo: Busca web → Analiza → Ejecuta código → Genera imagen → Responde</p></div>`;
+  }
+ }catch(e){resDiv.innerHTML=`<div class="card"><p>Error: ${e.message}</p></div>`;}
 }
-window.onload=()=>{document.getElementById('prompt').value='2+2'; preguntar();}
+function hablar(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){ alert('Navegador no soporta voz, usa Chrome'); return; }
+  const rec=new SpeechRecognition(); rec.lang='es-MX'; rec.onresult=(e)=>{document.getElementById('prompt').value=e.results[0][0].transcript; ejecutar();}; rec.start();
+}
+function leerTexto(t){const u=new SpeechSynthesisUtterance(t); u.lang='es-MX'; u.rate=1.1; speechSynthesis.speak(u);}
+function leerUltima(){ if(ultimaRespuesta) leerTexto(ultimaRespuesta); }
+document.getElementById('file').addEventListener('change', async (e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card vision"><p>👁️ BF VISION leyendo foto con OCR...</p></div>';
+  const {data:{text}} = await Tesseract.recognize(file, 'spa+eng');
+  document.getElementById('prompt').value=text.trim().slice(0,100);
+  resDiv.innerHTML=`<div class="card vision"><h3>👁️ Texto detectado en foto:</h3><p>${text}</p><p>Resolviendo...</p></div>`;
+  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:text})});
+  const d=await r.json();
+  resDiv.innerHTML+= (d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+  guardarMemoria(`[FOTO] ${text.slice(0,30)}`, d.x2?d.x2[0].respuesta:"");
+});
+mostrarMemoria();
+window.onload=()=>{document.getElementById('prompt').value='2+2'; ejecutar();}
 </script>
 </body>
 </html>
