@@ -1,8 +1,7 @@
 {
-  "installCommand": "npm install --prefix copilot-bf-x3 && npm install --prefix copilot-bf-x3 --prefix . 2>/dev/null || npm install",
   "rewrites": [
+    { "source": "/api/debate", "destination": "/api/index.js" },
     { "source": "/api/status", "destination": "/api/status.js" },
-    { "source": "/api/:path*", "destination": "/api/index.js" },
-    { "source": "/(.*)", "destination": "/api/index.js" }
+    { "source": "/(.*)", "destination": "/public/index.html" }
   ]
 }
