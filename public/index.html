@@ -3,40 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF v2.4.3 - mas arriba</title>
+<title>IA BF v3.2 UNIVERSAL</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:15px}
-.logo-wrap{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:bold;color:#000;margin:15px 0;box-shadow:0 0 30px #00ff88}
-h1{font-size:32px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.lema{color:#00ff88;font-weight:bold;margin-bottom:15px}
-.input-box{width:100%;max-width:700px;display:flex;gap:10px;margin:15px 0}
-input{flex:1;padding:14px;border-radius:12px;border:1px solid #333;background:#111;color:#fff}
-button{padding:14px 20px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
-#result{width:100%;max-width:700px;display:grid;gap:12px}
-.card{background:#111;border:1px solid #222;border-radius:16px;padding:16px}
-.card.lider{border-left:4px solid #00ff88}
-.card.supremo{border-left:4px solid #00aaff}
+.logo-wrap{width:90px;height:90px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:28px;margin:12px}
+h1{font-size:28px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lema{color:#00ff88;font-weight:bold;margin-bottom:12px;font-size:14px}
+.input-box{width:100%;max-width:700px;display:flex;gap:8px;margin:12px 0}
+input{flex:1;padding:13px;border-radius:12px;border:1px solid #333;background:#111;color:#fff}
+button{padding:13px 18px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
+#result{width:100%;max-width:700px;display:grid;gap:10px}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:14px}
+.card.lider{border-left:3px solid #00ff88}
+.card.supremo{border-left:3px solid #00aaff}
 </style>
 </head>
 <body>
 <div class="logo-wrap">BF</div>
-<h1>IA BF</h1>
-<div class="lema">IA BF mas arriba que lo alto!</div>
+<h1>IA BF v3.2</h1>
+<div class="lema">UNIVERSAL - Todos los idiomas, ecuaciones y teorías</div>
 <div class="input-box">
-<input id="prompt" placeholder="Ej: Cuanto es 2+2" onkeypress="if(event.key==='Enter') preguntar()">
-<button onclick="preguntar()">Preguntar</button>
+<input id="prompt" placeholder="Ej: 2+2, E=mc2, traduce hola, teoría big bang..." onkeypress="if(event.key==='Enter') preguntar()">
+<button onclick="preguntar()">Responder</button>
 </div>
 <div id="result"></div>
 <script>
 async function preguntar(){
  const p=document.getElementById('prompt').value.trim(); if(!p) return;
- const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 Calculando...</p></div>';
+ const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 Pensando universal...</p></div>';
  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
  const d=await r.json();
  resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
 }
-window.onload=()=>{document.getElementById('prompt').value='Cuanto es 2+2'; preguntar();}
+window.onload=()=>{document.getElementById('prompt').value='2+2'; preguntar();}
 </script>
 </body>
 </html>

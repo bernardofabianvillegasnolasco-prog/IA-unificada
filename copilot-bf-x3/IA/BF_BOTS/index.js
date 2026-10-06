@@ -15,73 +15,84 @@ function calcularBF(texto){
   return null;
 }
 
-const MATERIAS_BF = {
-  matematicas: {
-    keywords: ["matematica","suma","resta","multiplicacion","division","ecuacion","algebra","geometria","2+2","cuanto es"],
-    respuestas: {
-      "2+2": "4 - suma básica. 2 unidades + 2 unidades = 4",
-      "default": "Matemáticas BF: Resuelve con lógica, números y fórmulas mas arriba que lo alto."
-    }
-  },
-  fisica: { keywords:["fisica","newton","gravedad","velocidad","fuerza","energia","luz"], default:"Física BF: F=ma, E=mc², gravedad 9.8m/s². Todo se mueve con leyes mas arriba." },
-  quimica: { keywords:["quimica","elemento","tabla periodica","atomo","molecula","H2O","agua"], default:"Química BF: H2O es agua, tabla periódica con 118 elementos. Reacciones mas arriba." },
-  biologia: { keywords:["biologia","celula","adn","fotosintesis","cuerpo","corazon","animal"], default:"Biología BF: Célula es unidad de vida, ADN es código, fotosíntesis crea oxígeno. Vida mas arriba." },
-  historia: { keywords:["historia","revolucion","guerra","mexico","independencia","azteca","maya"], default:"Historia BF: México independiente 1821, Revolución 1910. Historia mas arriba que lo alto." },
-  geografia: { keywords:["geografia","capital","pais","montaña","rio","continente","mapa"], default:"Geografía BF: 7 continentes, Tokio capital Japón, Everest 8848m. Mundo mas arriba." },
-  espanol: { keywords:["español","ortografia","verbo","sustantivo","literatura","poema"], default:"Español BF: Ortografía y gramática mas arriba. Verbo es acción, sustantivo es cosa." },
-  ingles: { keywords:["ingles","english","translate","hello","how are"], default:"Inglés BF: Hello=Hola, How are you=Como estas. Inglés mas arriba." },
-  programacion: { keywords:["codigo","programar","javascript","python","html","funcion"], default:"Programación BF: Código mas arriba. JavaScript, Python, HTML. Lógica pura." },
-  arte: { keywords:["arte","pintura","musica","colores"], default:"Arte BF: Colores, música y creatividad mas arriba." }
+const ECUACIONES_TEORIAS = {
+  // MATEMÁTICAS
+  "pitagoras": "a² + b² = c²",
+  "ecuacion segundo grado": "x = [-b ± √(b²-4ac)] / 2a",
+  "area circulo": "A = πr²",
+  "circunferencia": "C = 2πr",
+  "euler": "e^(iπ) + 1 = 0",
+  // FÍSICA
+  "newton": "F = m·a",
+  "einstein": "E = m·c²",
+  "gravedad": "F = G·(m1·m2)/r², g=9.8 m/s²",
+  "velocidad": "v = d/t",
+  "energia cinetica": "Ec = ½mv²",
+  "ohm": "V = I·R",
+  "relatividad": "Teoría de Relatividad: el tiempo y espacio se curvan, E=mc²",
+  "big bang": "Teoría Big Bang: universo nació hace 13.8 mil millones de años de una singularidad",
+  // QUÍMICA
+  "agua": "H2O",
+  "co2": "Dióxido de carbono CO2",
+  "tabla periodica": "118 elementos, H=1, He=2, Li=3... Og=118",
+  // BIOLOGÍA
+  "evolucion": "Teoría de Evolución de Darwin: selección natural",
+  "adn": "ADN doble hélice, A-T, C-G",
+  "fotosintesis": "6CO2 + 6H2O + luz → C6H12O6 + 6O2"
 };
 
-function detectarMateria(texto){
+const IDIOMAS = {
+  es: "Español", en: "English", fr: "Français", de: "Deutsch", ja: "日本語", zh: "中文", pt: "Português", it: "Italiano", ru: "Русский", ar: "العربية"
+};
+
+function detectarEcuacion(texto){
   const lower = texto.toLowerCase();
-  for(const [materia, data] of Object.entries(MATERIAS_BF)){
-    for(const kw of data.keywords){
-      if(lower.includes(kw)) return materia;
-    }
+  for(const k in ECUACIONES_TEORIAS){
+    if(lower.includes(k)) return ECUACIONES_TEORIAS[k];
   }
   return null;
 }
 
-function respuestaPorMateria(materia, pregunta, botId){
-  const calc = calcularBF(pregunta);
-  if(calc){
-    return botId==="BF-LIDER"? `AFIRMATIVO [MATEMÁTICAS]: ${calc.expr} = ${calc.resultado}. Cálculo táctico BF.` : `[SUPREMO MATEMÁTICO] ${calc.expr} = ${calc.resultado}. Número supremo mas arriba.`;
-  }
-  const data = MATERIAS_BF[materia];
-  if(!data) return null;
-  const lower = pregunta.toLowerCase();
-  if(materia==="matematicas" && data.respuestas){
-    for(const k in data.respuestas){ if(lower.includes(k) && k!=="default") return data.respuestas[k]; }
-  }
-  return data.default || data.respuestas?.default;
-}
-
 export async function buscarInternetReal(query){
   try{
-    const kw = query.toLowerCase().replace(/que es|cuanto es|explica|dime|como funciona/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
-    const r = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, { headers:{"User-Agent":"BF-v3.1"}, signal:AbortSignal.timeout(4000) });
-    if(r.ok){ const j=await r.json(); if(j?.extract) return j.extract.slice(0,300); }
+    const kw = query.toLowerCase().replace(/que es|cuanto es|explica|dime|traduce|teoria|ecuacion/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
+    if(!kw) return "";
+    const r = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, { headers:{"User-Agent":"BF-v3.2"}, signal:AbortSignal.timeout(4000) });
+    if(r.ok){ const j=await r.json(); if(j?.extract) return j.extract.slice(0,350); }
   }catch{}
   return "";
 }
 
 export async function responderConBotPropio(botId, prompt, webData){
   const lower = prompt.toLowerCase();
-  if(lower.includes("fecha de nacimiento")||lower.includes("cuando naciste")) return botId==="BF-LIDER"? `LIDER BF: Creador 01/03/1999 solo si preguntas.` : `SUPREMO: Registro 01/03/1999.`;
-  if(lower.includes("quien eres")||lower.includes("creador")) return botId==="BF-LIDER"? `IA BF mas arriba! Soy LIDER BF, creado por BERNARDO FABIAN VILLEGAS NOLAZCO. Todas las materias.` : `IA BF mas arriba! Soy SUPREMO BF-9 INMORTAL, todas las materias, creado por BERNARDO FABIAN VILLEGAS NOLAZCO.`;
 
-  const materia = detectarMateria(prompt);
-  let baseMateria = null;
-  if(materia) baseMateria = respuestaPorMateria(materia, prompt, botId);
+  // 1. MATEMÁTICAS DIRECTAS
+  const calc = calcularBF(prompt);
+  if(calc){
+    return botId==="BF-LIDER"? `${calc.expr} = ${calc.resultado}` : `${calc.expr} = ${calc.resultado} | Matemáticas puras.`;
+  }
 
+  // 2. ECUACIONES Y TEORÍAS EXISTENTES
+  const ecuacion = detectarEcuacion(prompt);
+  if(ecuacion){
+    return botId==="BF-LIDER"? `${ecuacion}` : `${ecuacion} | Teoría universal.`;
+  }
+
+  // 3. IDIOMAS - Detecta si pide traducción
+  if(lower.includes("traduce")||lower.includes("translate")||lower.includes("como se dice")){
+    const web = await buscarInternetReal(prompt);
+    if(web) return web.slice(0,300);
+    return botId==="BF-LIDER"? `Traducción: "${prompt}" disponible en ${Object.values(IDIOMAS).join(", ")}` : `Idiomas: ES, EN, FR, DE, JA, ZH, PT, IT, RU, AR - Traducción directa: ${prompt}`;
+  }
+
+  // 4. CUALQUIER MATERIA - Respuesta directa, sin "creado por"
   const web = await buscarInternetReal(prompt);
-  let final = web || baseMateria || `Clase BF [${materia||'GENERAL'}]: ${prompt.slice(0,120)} - explicado mas arriba que lo alto.`;
+  if(web) return botId==="BF-LIDER"? web.slice(0,300) : web.slice(0,350);
 
+  // Fallback directo, sin creador
   if(botId==="BF-LIDER"){
-    return `AFIRMATIVO [${(materia||'GENERAL').toUpperCase()}]: ${final} - LIDER BF enseña mas arriba.`.slice(0,350);
+    return `${prompt.slice(0,80)}: explicado directo, sin rodeos.`;
   } else {
-    return `[SUPREMO BF-9 - ${materia||'GENERAL'}] ${final} Análisis inmortal. Creado por BERNARDO FABIAN VILLEGAS NOLAZCO.`.slice(0,400);
+    return `${prompt.slice(0,80)}: análisis completo, teoría y práctica.`;
   }
 }
