@@ -3,56 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF mas arriba que lo alto</title>
+<title>IA BF v3.0 COMPLETA - mas arriba que lo alto</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
-.logo{width:160px;height:160px;margin:10px 0;border-radius:50%;box-shadow:0 0 30px #00ff88aa}
-h1{font-size:36px;margin:5px 0;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
-.lema{color:#00ff88;margin-bottom:20px;font-weight:bold;font-size:20px;text-shadow:0 0 10px #00ff88}
-.input-box{width:100%;max-width:700px;display:flex;gap:10px;margin:20px 0}
-input{flex:1;padding:15px;border-radius:12px;border:1px solid #333;background:#111;color:#fff;font-size:16px}
-button{padding:15px 25px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;box-shadow:0 0 15px #00ff88}
-#result{width:100%;max-width:700px;display:grid;gap:15px}
-.card{background:#111;border:1px solid #222;border-radius:16px;padding:18px;animation:fade 0.3s}
-@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.card.lider{border-left:4px solid #00ff88;box-shadow:0 0 10px #00ff8844}
-.card.supremo{border-left:4px solid #00aaff;box-shadow:0 0 10px #00aaff44}
-.card h3{font-size:11px;color:#888;margin-bottom:8px;letter-spacing:1px}
-.card p{font-size:16px;line-height:1.5}
-.footer{margin-top:40px;color:#555;font-size:10px;text-align:center}
+body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:15px}
+h1{font-size:32px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lema{color:#00ff88;font-weight:bold;margin:8px 0 15px}
+.tabs{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap;justify-content:center}
+.tab{padding:10px 18px;border-radius:20px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:13px}
+.tab.active{background:#00ff88;color:#000;border-color:#00ff88;font-weight:bold}
+.input-box{width:100%;max-width:700px;display:flex;gap:10px;margin-bottom:15px}
+input{flex:1;padding:14px;border-radius:12px;border:1px solid #333;background:#111;color:#fff}
+button{padding:14px 20px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
+#result{width:100%;max-width:700px;display:grid;gap:12px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:16px}
+.card.lider{border-left:4px solid #00ff88}
+.card.supremo{border-left:4px solid #00aaff}
+.card img{width:100%;border-radius:12px;margin-top:10px}
+.footer{margin-top:30px;color:#555;font-size:10px}
 </style>
 </head>
 <body>
-<img class="logo" src="https://i.ibb.co/8gK6Xq6/logo-bf.png" onerror="this.style.display='none'" alt="IA BF Logo">
-<h1>IA BF</h1>
-<div class="lema">IA BF mas arriba que lo alto!</div>
+<h1>IA BF v3.0</h1>
+<div class="lema">COMPLETA - mas arriba que lo alto!</div>
+<div class="tabs">
+<button class="tab active" onclick="setTab('chat')">💬 Chat x2</button>
+<button class="tab" onclick="setTab('imagen')">🎨 Imagen</button>
+<button class="tab" onclick="setTab('video')">🎬 Video</button>
+<button class="tab" onclick="setTab('voz')">🎤 Herramientas</button>
+</div>
 <div class="input-box">
-<input id="prompt" placeholder="Pregunta algo..." onkeypress="if(event.key==='Enter') preguntar()">
-<button onclick="preguntar()">Preguntar</button>
+<input id="prompt" placeholder="Escribe..." onkeypress="if(event.key==='Enter') ejecutar()">
+<button onclick="ejecutar()">Generar</button>
 </div>
 <div id="result"></div>
-<div class="footer">Creación de BERNARDO FABIAN VILLEGAS NOLAZCO - BF-LIDER + BF-SUPREMO - v2.4.0 - 100% BF</div>
+<div class="footer">BERNARDO FABIAN VILLEGAS NOLAZCO - BF-LIDER + SUPREMO + IMAGEN + VIDEO - 100% BF</div>
 <script>
-async function preguntar(){
- const p=document.getElementById('prompt').value.trim();
- if(!p) return;
- const resDiv=document.getElementById('result');
- resDiv.innerHTML='<div class="card"><p>🧠 LIDER y SUPREMO debatiendo...</p></div>';
- try{
-  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
-  const data=await r.json();
-  const bots=data.x2||[];
-  resDiv.innerHTML=bots.map(b=>{
-   const cls=b.cerebro.includes('LIDER')?'lider':'supremo';
-   const icon=b.cerebro.includes('LIDER')?'⚡':'♾️';
-   return `<div class="card ${cls}"><h3>${icon} ${b.cerebro} | ${b.lema}</h3><p>${b.respuesta}</p></div>`;
-  }).join('');
- }catch(e){
-  resDiv.innerHTML=`<div class="card"><p>Error: ${e.message}</p></div>`;
- }
+let modo='chat';
+function setTab(m){modo=m; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active');
+ document.getElementById('prompt').placeholder = m==='chat'?'Pregunta a tus 2 cerebros...': m==='imagen'?'Describe imagen: Ej. taco espacial neon': m==='video'?'Describe video: Ej. ciudad futurista BF': 'Ej: traducir, resumir, codigo...';
 }
-window.onload=()=>{document.getElementById('prompt').value='Quien eres'; preguntar();}
+async function ejecutar(){
+ const p=document.getElementById('prompt').value.trim(); if(!p) return;
+ const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 IA BF trabajando mas arriba...</p></div>';
+ try{
+  if(modo==='chat'){
+   const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
+   const d=await r.json();
+   resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+  } else if(modo==='imagen'){
+   const r=await fetch('/api/imagen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
+   const d=await r.json();
+   resDiv.innerHTML=`<div class="card"><h3>🎨 BF-IMAGEN TURBO</h3><p>${d.prompt}</p><img src="${d.imageUrl}" onload="window.scrollTo(0,document.body.scrollHeight)"><p><a href="${d.imageUrl}" target="_blank" style="color:#00ff88">Abrir imagen HD</a></p></div>`;
+  } else if(modo==='video'){
+   const r=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
+   const d=await r.json();
+   if(d.videoUrl){ resDiv.innerHTML=`<div class="card"><h3>🎬 VIDEO REAL BF</h3><video controls src="${d.videoUrl}" style="width:100%;border-radius:12px"></video></div>`; }
+   else { resDiv.innerHTML=`<div class="card"><h3>🎬 VIDEO PREVIEW (Gratis)</h3><p>${d.instruccion}</p><img src="${d.previewUrl}"><p style="color:#888;font-size:12px">Para video MP4 real: agrega RUNWAY_API_KEY en Vercel Env Vars. Cuesta $0.05 por segundo.</p></div>`; }
+  } else {
+   const r=await fetch('/api/completa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'general',prompt:p})});
+   const d=await r.json();
+   resDiv.innerHTML=`<div class="card"><h3>🛠️ BF-HERRAMIENTAS</h3><p>${d.resultado}</p></div>`;
+  }
+ }catch(e){ resDiv.innerHTML=`<div class="card"><p>Error: ${e.message}</p></div>`; }
+}
+window.onload=()=>{document.getElementById('prompt').value='Quien eres'; ejecutar();}
 </script>
 </body>
 </html>
