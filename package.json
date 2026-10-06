@@ -1,0 +1,13 @@
+{
+  "name": "ia-unificada",
+  "version": "1.0.0-x9-unificada",
+  "description": "IA Unificada + BF x9 ULTRA",
+  "main": "copilot-bf-x3/server.js",
+  "scripts": {
+    "start": "node copilot-bf-x3/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

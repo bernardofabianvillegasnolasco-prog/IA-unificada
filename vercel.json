@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "copilot-bf-x3/server.js", "use": "@vercel/node" },
+    { "src": "copilot-bf-x3/api/**/*.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "copilot-bf-x3/api/$1" },
+    { "src": "/api/status", "dest": "copilot-bf-x3/server.js" },
+    { "src": "/(.*)", "dest": "copilot-bf-x3/server.js" }
+  ]
+}
