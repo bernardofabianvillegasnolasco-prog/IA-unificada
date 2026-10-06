@@ -1,7 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api/debate", "destination": "/api/index.js" },
-    { "source": "/api/status", "destination": "/api/status.js" },
-    { "source": "/(.*)", "destination": "/public/index.html" }
-  ]
-}

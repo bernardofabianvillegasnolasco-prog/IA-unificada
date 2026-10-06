@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IA BF mas arriba que lo alto</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:32px;margin:20px 0;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lema{color:#00ff88;margin-bottom:20px;font-weight:bold;font-size:18px}
+.input-box{width:100%;max-width:700px;display:flex;gap:10px;margin:20px 0}
+input{flex:1;padding:15px;border-radius:12px;border:1px solid #333;background:#111;color:#fff;font-size:16px}
+button{padding:15px 25px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
+#result{width:100%;max-width:700px;display:grid;gap:15px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:18px}
+.card.lider{border-left:4px solid #00ff88}
+.card.supremo{border-left:4px solid #00aaff}
+.card h3{font-size:13px;color:#888;margin-bottom:8px}
+.card p{font-size:16px;line-height:1.5}
+.footer{margin-top:40px;color:#555;font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<h1>IA BF</h1>
+<div class="lema">IA BF mas arriba que lo alto!</div>
+<div class="input-box">
+<input id="prompt" placeholder="Pregunta algo... ej: Quien eres" onkeypress="if(event.key==='Enter') preguntar()">
+<button onclick="preguntar()">Preguntar</button>
+</div>
+<div id="result"></div>
+<div class="footer">Creación de BERNARDO FABIAN VILLEGAS NOLAZCO - 2 BOTS - BF-LIDER + BF-SUPREMO - 100% BF</div>
+<script>
+async function preguntar(){
+ const p=document.getElementById('prompt').value.trim();
+ if(!p) return;
+ const resDiv=document.getElementById('result');
+ resDiv.innerHTML='<div class="card"><p>🧠 Pensando con 2 cerebros...</p></div>';
+ try{
+  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
+  const data=await r.json();
+  const bots=data.x2||[];
+  resDiv.innerHTML=bots.map(b=>{
+   const cls=b.cerebro.includes('LIDER')?'lider':'supremo';
+   return `<div class="card ${cls}"><h3>${b.cerebro} | ${b.lema||'IA BF mas arriba que lo alto'}</h3><p>${b.respuesta}</p></div>`;
+  }).join('');
+ }catch(e){
+  resDiv.innerHTML=`<div class="card"><p>Error: ${e.message}</p></div>`;
+ }
+}
+window.onload=()=>{document.getElementById('prompt').value='Quien eres'; preguntar();}
+</script>
+</body>
+</html>
