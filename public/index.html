@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF v4.2 DGETI + TECNOLOGICOS</title>
+<title>IA BF v5.0 UNIVERSAL TOTAL</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px}
 .logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:26px;margin:10px;box-shadow:0 0 25px #00ff88}
 h1{font-size:24px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.lema{color:#00ff88;font-weight:bold;font-size:11px;margin-bottom:10px;text-align:center}
-.tabs{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
-.tab{padding:6px 10px;border-radius:16px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:10px}
+.lema{color:#00ff88;font-weight:bold;font-size:10px;margin-bottom:10px;text-align:center}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.tab{padding:6px 9px;border-radius:14px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:9px}
 .tab.active{background:#00ff88;color:#000;font-weight:bold}
-.box{width:100%;max-width:720px;display:flex;gap:6px;margin:8px 0}
+.box{width:100%;max-width:740px;display:flex;gap:6px;margin:8px 0}
 input{flex:1;padding:11px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;font-size:13px}
 button{padding:11px 14px;border-radius:10px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;font-size:11px}
-#result{width:100%;max-width:720px;display:grid;gap:8px}
+#result{width:100%;max-width:740px;display:grid;gap:8px}
 .card{background:#111;border:1px solid #222;border-radius:12px;padding:12px;font-size:13px}
 .card.lider{border-left:3px solid #00ff88}
 .card.supremo{border-left:3px solid #00aaff}
@@ -24,25 +24,23 @@ button{padding:11px 14px;border-radius:10px;border:0;background:#00ff88;color:#0
 </head>
 <body>
 <div class="logo">BF</div>
-<h1>IA BF v4.2</h1>
-<div class="lema">DGETI + TECNOLÓGICOS DEL MUNDO - 35 especialidades + Ing. + MIT</div>
+<h1>IA BF v5.0 UNIVERSAL TOTAL</h1>
+<div class="lema">Licenciaturas + Leyes + DGETI + Tecnológicos + Todo lo conocido por el ser humano</div>
 <div class="tabs">
-<button class="tab active" onclick="setTab('dgeti')">🔧 DGETI</button>
-<button class="tab" onclick="setTab('tec')">⚙️ TecNM</button>
-<button class="tab" onclick="setTab('mit')">🌍 MIT Global</button>
-<button class="tab" onclick="setTab('calc')">🔢 Cálculo</button>
+<button class="tab active">🎓 Licenciaturas</button>
+<button class="tab">⚖️ Leyes</button>
+<button class="tab">🔧 DGETI</button>
+<button class="tab">🌍 Universal</button>
 </div>
 <div class="box">
-<input id="prompt" placeholder="Ej: programacion dgeti, electronica, mecatronica, raiz cuadrada 1554273638..." onkeypress="if(event.key==='Enter') ejecutar()">
+<input id="prompt" placeholder="Ej: raiz cuadrada 1554273638, derecho, medicina, ley de newton, programacion dgeti, todo..." onkeypress="if(event.key==='Enter') ejecutar()">
 <button onclick="ejecutar()">Responder</button>
 </div>
 <div id="result"></div>
 <script>
-let modo='dgeti';
-function setTab(m){modo=m; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active');}
 async function ejecutar(){
  const p=document.getElementById('prompt').value.trim(); if(!p) return;
- const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 BF DGETI pensando...</p></div>';
+ const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 BF Universal pensando mas arriba...</p></div>';
  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
  const d=await r.json();
  resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
