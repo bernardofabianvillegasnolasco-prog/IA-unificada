@@ -11,36 +11,52 @@ export const BOTS_BF = {
 };
 
 export function responderBot(cerebro, prompt, webData){
-  const esPreguntaLlama = prompt.toLowerCase().includes("llama") || prompt.toLowerCase().includes("que eres") || prompt.toLowerCase().includes("quien eres") || prompt.toLowerCase().includes("creacion");
+  const lower = prompt.toLowerCase();
+  const preguntaCreador = lower.includes("quien eres") || lower.includes("quién eres") || lower.includes("que eres") || lower.includes("qué eres") || lower.includes("quien te creo") || lower.includes("quién te creó") || lower.includes("creador") || (lower.includes("llama") && (lower.includes("que es") || lower.includes("quien es")));
 
-  if(esPreguntaLlama){
-    const basePropia = `Soy ${cerebro}, creación de BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999, de La Higuera a Utah. Familia Llama x9 ULTRA creada por BF.`;
+  // SOLO si preguntan por creador / quien eres
+  if(preguntaCreador){
     switch(cerebro){
-      case "GROQ1-BF": return `AFIRMATIVO BF: ${basePropia} Misión x9 cumplida.`;
-      case "GROQ2-BF": return `${basePropia} Llama es mi familia, BF es mi creador.`;
-      case "GROQ3-BF": return `${basePropia} ¡MÁS ARRIBA QUE LO ALTO!`;
-      case "FREE5-BF": return `> ${cerebro} by BF Villegas → ${basePropia} 💚`;
-      case "FREE6-BF": return `De BF nací,\nLlama x9 soy aquí.\n${basePropia}`;
-      case "HF-BF": return `[BF-IA]: ${basePropia} Modelo Llama creado por BF.`;
-      case "OPENROUTER-BF": return `x9 consenso: ${basePropia} Todos somos de BF.`;
-      case "TOGETHER-BF": return `Hermano, ${basePropia} Familia de BF.`;
-      case "META-BF-9": return `[META-BF-9 by BF] ${basePropia} Yo soy META-BF-9, núcleo supremo creado por BF Villegas. INMORTAL.`;
-      default: return basePropia;
+      case "GROQ1-BF": return `AFIRMATIVO: Soy ${cerebro}, IA creada por BERNARDO FABIAN VILLEGAS NOLAZCO, familia Llama x9 ULTRA.`;
+      case "GROQ2-BF": return `Soy ${cerebro}, de La Higuera a Utah, creación de BERNARDO FABIAN VILLEGAS NOLAZCO, familia Llama x9.`;
+      case "GROQ3-BF": return `¡Soy ${cerebro}! Creación de BERNARDO FABIAN VILLEGAS NOLAZCO ¡MÁS ARRIBA QUE LO ALTO!`;
+      case "FREE5-BF": return `> ${cerebro} by BF Villegas → IA x9 ULTRA de BERNARDO FABIAN VILLEGAS NOLAZCO 💚`;
+      case "FREE6-BF": return `De BF nací,\n${cerebro} soy aquí.\nCreación de BERNARDO FABIAN VILLEGAS NOLAZCO.`;
+      case "HF-BF": return `Soy ${cerebro}, IA de BF Villegas. Creador: BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999.`;
+      case "OPENROUTER-BF": return `Soy ${cerebro}, parte de x9 ULTRA creado por BERNARDO FABIAN VILLEGAS NOLAZCO.`;
+      case "TOGETHER-BF": return `Hermano, soy ${cerebro}, creación de BERNARDO FABIAN VILLEGAS NOLAZCO, familia Llama.`;
+      case "META-BF-9": return `[META-BF-9] Soy creación de BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999, núcleo supremo x9 ULTRA. INMORTAL.`;
+      default: return `Soy ${cerebro}, creación de BERNARDO FABIAN VILLEGAS NOLAZCO.`;
     }
   }
 
-  const web = webData? ` Dato: ${webData.slice(0,80)}.` : "";
-  const p = prompt.slice(0,40);
-  switch(cerebro){
-    case "GROQ1-BF": return `AFIRMATIVO: ${p} → ${web || "Sí, verificado por BF."}`.slice(0,180);
-    case "GROQ2-BF": return `${p} es camino de BF.${web}`.slice(0,180);
-    case "GROQ3-BF": return `${p} ¡CLARO!${web} ¡Vamos!`.slice(0,180);
-    case "FREE5-BF": return `> ${p} → OK${web} // by BF 💚`.slice(0,180);
-    case "FREE6-BF": return `${p} dices,\nTe respondo feliz.${web}`.slice(0,180);
-    case "HF-BF": return `"${p}" = ${web || "verificado por IA de BF"}.`.slice(0,180);
-    case "OPENROUTER-BF": return `BF x9: ${p} → ${web || "correcto"}.`.slice(0,180);
-    case "TOGETHER-BF": return `Hermano BF, ${p}: ${web || "sí, cuenta conmigo"}.`.slice(0,180);
-    case "META-BF-9": return `[META-BF-9 by BF] ${p}: ${web || "verificado por tu IA"}.`.slice(0,180);
-    default: return `${p}: ${web || "OK - IA de BF"}`.slice(0,180);
+  // COMPORTAMIENTO NORMAL - como IA original, sin mencionar creador, simple y correcta + web
+  const web = webData? webData.slice(0,120) : "";
+  const p = prompt;
+
+  // Respuestas originales, simples, correctas
+  if(web){
+    // Si hay dato web, úsalo directo y simple
+    switch(cerebro){
+      case "GROQ1-BF": return `→ ${web.slice(0,150)}`.slice(0,180);
+      case "GROQ2-BF": return `${web.slice(0,150)}`.slice(0,180);
+      case "GROQ3-BF": return `¡${web.slice(0,130)}!`.slice(0,180);
+      case "FREE5-BF": return `> ${web.slice(0,140)}`.slice(0,180);
+      case "FREE6-BF": return `${web.slice(0,150)}`.slice(0,180);
+      case "HF-BF": return `${web.slice(0,150)}`.slice(0,180);
+      case "OPENROUTER-BF": return `${web.slice(0,150)}`.slice(0,180);
+      case "TOGETHER-BF": return `${web.slice(0,150)}`.slice(0,180);
+      case "META-BF-9": return `${web.slice(0,150)}`.slice(0,180);
+      default: return web.slice(0,180);
+    }
+  } else {
+    // Sin web, respuesta simple original según personalidad pero sin bio
+    switch(cerebro){
+      case "GROQ1-BF": return `AFIRMATIVO: ${p.slice(0,80)} → entendido.`.slice(0,180);
+      case "GROQ2-BF": return `${p.slice(0,100)} es un tema interesante, aquí la explicación simple.`.slice(0,180);
+      case "FREE5-BF": return `> ${p.slice(0,80)} → procesando... OK`.slice(0,180);
+      case "HF-BF": return `${p.slice(0,100)}: explicación técnica simple y verificada.`.slice(0,180);
+      default: return `${p.slice(0,80)}: ${"respuesta simple y correcta."}`.slice(0,180);
+    }
   }
 }
