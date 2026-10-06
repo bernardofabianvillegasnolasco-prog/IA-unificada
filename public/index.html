@@ -7,44 +7,46 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
-h1{font-size:34px;margin:20px 0;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.lema{color:#00ff88;margin-bottom:20px;font-weight:bold;font-size:20px}
+.logo{width:160px;height:160px;margin:10px 0;border-radius:50%;box-shadow:0 0 30px #00ff88aa}
+h1{font-size:36px;margin:5px 0;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+.lema{color:#00ff88;margin-bottom:20px;font-weight:bold;font-size:20px;text-shadow:0 0 10px #00ff88}
 .input-box{width:100%;max-width:700px;display:flex;gap:10px;margin:20px 0}
 input{flex:1;padding:15px;border-radius:12px;border:1px solid #333;background:#111;color:#fff;font-size:16px}
-button{padding:15px 25px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
+button{padding:15px 25px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;box-shadow:0 0 15px #00ff88}
 #result{width:100%;max-width:700px;display:grid;gap:15px}
-.card{background:#111;border:1px solid #222;border-radius:16px;padding:18px}
-.card.lider{border-left:4px solid #00ff88}
-.card.supremo{border-left:4px solid #00aaff}
-.card h3{font-size:12px;color:#888;margin-bottom:8px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:18px;animation:fade 0.3s}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card.lider{border-left:4px solid #00ff88;box-shadow:0 0 10px #00ff8844}
+.card.supremo{border-left:4px solid #00aaff;box-shadow:0 0 10px #00aaff44}
+.card h3{font-size:11px;color:#888;margin-bottom:8px;letter-spacing:1px}
 .card p{font-size:16px;line-height:1.5}
-.footer{margin-top:40px;color:#555;font-size:11px;text-align:center}
+.footer{margin-top:40px;color:#555;font-size:10px;text-align:center}
 </style>
 </head>
 <body>
+<img class="logo" src="https://i.ibb.co/8gK6Xq6/logo-bf.png" onerror="this.style.display='none'" alt="IA BF Logo">
 <h1>IA BF</h1>
 <div class="lema">IA BF mas arriba que lo alto!</div>
 <div class="input-box">
-<input id="prompt" placeholder="Escribe tu pregunta..." onkeypress="if(event.key==='Enter') preguntar()">
+<input id="prompt" placeholder="Pregunta algo..." onkeypress="if(event.key==='Enter') preguntar()">
 <button onclick="preguntar()">Preguntar</button>
 </div>
 <div id="result"></div>
-<div class="footer">Creación de BERNARDO FABIAN VILLEGAS NOLAZCO - BF-LIDER + BF-SUPREMO - 100% BF</div>
+<div class="footer">Creación de BERNARDO FABIAN VILLEGAS NOLAZCO - BF-LIDER + BF-SUPREMO - v2.4.0 - 100% BF</div>
 <script>
 async function preguntar(){
  const p=document.getElementById('prompt').value.trim();
  if(!p) return;
  const resDiv=document.getElementById('result');
- resDiv.innerHTML='<div class="card"><p>🧠 Pensando con 2 cerebros...</p></div>';
+ resDiv.innerHTML='<div class="card"><p>🧠 LIDER y SUPREMO debatiendo...</p></div>';
  try{
   const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
-  const text=await r.text();
-  let data;
-  try{ data=JSON.parse(text); } catch(e){ throw new Error(text.slice(0,100)); }
+  const data=await r.json();
   const bots=data.x2||[];
   resDiv.innerHTML=bots.map(b=>{
    const cls=b.cerebro.includes('LIDER')?'lider':'supremo';
-   return `<div class="card ${cls}"><h3>${b.cerebro} | ${b.lema}</h3><p>${b.respuesta}</p></div>`;
+   const icon=b.cerebro.includes('LIDER')?'⚡':'♾️';
+   return `<div class="card ${cls}"><h3>${icon} ${b.cerebro} | ${b.lema}</h3><p>${b.respuesta}</p></div>`;
   }).join('');
  }catch(e){
   resDiv.innerHTML=`<div class="card"><p>Error: ${e.message}</p></div>`;
