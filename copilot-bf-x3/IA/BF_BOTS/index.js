@@ -9,80 +9,55 @@ function calcular(t){
 }
 function algebra(t){const l=t.toLowerCase().replace(/\s+/g,''); try{let m=l.match(/^(-?\d*\.?\d*)x([\+\-]\d+\.?\d*)?=(-?\d+\.?\d*)$/); if(m){let a=m[1]; if(a===''||a==='+')a=1;else if(a==='-')a=-1;else a=parseFloat(a); let b=m[2]?parseFloat(m[2]):0; let c=parseFloat(m[3]); return `x = ${(c-b)/a}`;} m=l.match(/^x([\+\-]\d+\.?\d*)=(-?\d+\.?\d*)$/); if(m)return `x = ${parseFloat(m[2])-parseFloat(m[1])}`; m=l.match(/^(-?\d*\.?\d*)x=(-?\d+\.?\d*)$/); if(m){let a=m[1]; if(a===''||a==='+')a=1;else if(a==='-')a=-1;else a=parseFloat(a); return `x = ${parseFloat(m[2])/a}`;} m=l.match(/^x\^2=(-?\d+\.?\d*)$/); if(m){let c=parseFloat(m[1]); return c>=0?`x = ±${Math.sqrt(c)}`:`x = ±${Math.sqrt(-c)}i`;}}catch{} return null;}
 
-const CONOCIMIENTO_UNIVERSAL = {
-  // LICENCIATURAS
-  derecho: { kws:["derecho","licenciatura derecho","leyes","abogado","constitucion","codigo penal","amparo"], resp:"Derecho: Constitución MX Art 1-136, Código Penal, Civil, Amparo, Ley Federal Trabajo, Derecho Internacional, Mercantil, Familiar mas arriba" },
-  medicina: { kws:["medicina","licenciatura medicina","doctor","anatomia","fisiologia"], resp:"Medicina: Anatomía, fisiología, patología, farmacología, 206 huesos, sistema circulatorio, diagnóstico mas arriba" },
-  psicologia: { kws:["psicologia","mente","freud","conducta"], resp:"Psicología: Freud, Jung, conductismo, cognitiva, DSM-5, terapia mas arriba" },
-  arquitectura_lic: { kws:["arquitectura licenciatura","arquitecto"], resp:"Arquitectura Lic: Diseño, estructuras, AutoCAD, BIM, urbanismo, sostenibilidad mas arriba" },
-  administracion_lic: { kws:["administracion licenciatura","negocios","empresa"], resp:"Administración: Empresas, marketing, finanzas, RH, emprendimiento, MBA mas arriba" },
-  contaduria: { kws:["contaduria","contador","impuestos","sat"], resp:"Contaduría: SAT, ISR, IVA, estados financieros, auditoría, NIF mas arriba" },
-  economia_lic: { kws:["economia licenciatura","economia"], resp:"Economía: Micro, macro, oferta-demanda, PIB, inflación, bolsa valores mas arriba" },
-  educacion: { kws:["educacion licenciatura","pedagogia","maestro"], resp:"Educación: Pedagogía, didáctica, planeación, evaluación, neuroeducación mas arriba" },
-  enfermeria_lic: { kws:["enfermeria licenciatura"], resp:"Enfermería Lic: Cuidados, farmacología, urgencias, quirúrgica mas arriba" },
-  ingenierias: { kws:["ingenieria","sistemas","industrial","civil","mecanica"], resp:"Ingenierías: Sistemas, Industrial, Civil, Mecánica, Electromecánica, Química, todas mas arriba" },
-
-  // LEYES UNIVERSALES - FÍSICA
-  leyes_fisica: {
-    kws:["ley de newton","leyes de newton","ley de ohm","ley de gravedad","ley fisica"],
-    mapa:{
-      "newton 1":"1ª Ley Newton: Inercia - objeto en reposo sigue en reposo",
-      "newton 2":"2ª Ley Newton: F=m·a",
-      "newton 3":"3ª Ley Newton: Acción y reacción",
-      "ohm":"Ley Ohm: V=I·R",
-      "gravedad":"Ley Gravedad Universal: F=G·m1·m2/r²",
-      "termodinamica":"Leyes Termodinámica: 1ª ΔU=Q-W, 2ª Entropía ↑, 3ª Entropía 0 en 0K",
-      "maxwell":"Leyes Maxwell: ∇·E=ρ/ε₀, ∇·B=0, ∇×E=-∂B/∂t, ∇×B=μ₀J+μ₀ε₀∂E/∂t"
-    }
-  },
-  // LEYES HUMANAS - MÉXICO Y MUNDO
-  leyes_humanas: {
-    kws:["constitucion mexicana","codigo penal","ley federal trabajo","ley amparo","leyes mexico","derechos humanos"],
-    mapa:{
-      "constitucion":"Constitución MX 1917, 136 artículos, derechos humanos Art 1",
-      "amparo":"Ley Amparo: protección constitucional",
-      "trabajo":"LFT: 8h jornada, aguinaldo 15 días, vacaciones, IMSS",
-      "penal":"Código Penal: delitos y sanciones",
-      "civil":"Código Civil: personas, bienes, familia",
-      "derechos humanos":"DUDH 30 artículos ONU 1948"
-    }
-  },
-  // TODO LO CONOCIDO
-  universal: {
-    kws:["todo","universal","conocimiento humano","historia","filosofia","arte","ciencia"],
-    resp:"Universal BF: Todo lo conocido - Matemáticas, Física E=mc², Química 118 elementos, Biología ADN, Historia, Filosofía, Arte, Tecnología, Leyes, mas arriba que lo alto"
-  },
-  // DGETI + TECNOLOGICOS
-  dgeti: { kws:["dgeti","cbtis","cetis","programacion dgeti","electronica","mecatronica"], resp:"DGETI 35 especialidades: Programación, Electrónica, Mecatrónica, Mecánica, Electricidad, Lab Químico, Alimentos, Construcción, Contabilidad, Enfermería, Automotriz, Telecom mas arriba" },
-  tecnologicos: { kws:["tecnm","tecnologico","mit","stanford"], resp:"Tecnológicos: TecNM, MIT, Stanford - IA, Quantum, Robótica, Sistemas, Industrial, Civil mas arriba" }
+const CARRERAS_OMNI = {
+  agricultura: { kws:["agricultura","agronomia","agronomo","cultivo","siembra","agricola"], resp:"Agricultura/Agronomía: Suelos, pH 6-7, N-P-K, riego por goteo, cultivo maíz 8t/ha, trigo, frijol, fertirriego, agricultura regenerativa, hidroponía, mas arriba" },
+  ganaderia: { kws:["ganaderia","ganado","bovino","vacuno","ovino","porcino","ganadero"], resp:"Ganadería: Bovino 450kg, razas Angus, Brahman, alimentación 2.5% peso, pastoreo rotacional, reproducción IA, sanidad, producción leche 25L/día mas arriba" },
+  veterinaria: { kws:["veterinaria","veterinario","zootecnia"], resp:"Veterinaria/Zootecnia: Anatomía animal, vacunas, desparasitación, cirugía, nutrición animal, etología mas arriba" },
+  nutriologia: { kws:["nutriologia","nutricion","dieta","nutriologo","calorias"], resp:"Nutriología: Macro: proteína 4kcal/g, carbo 4, grasa 9, TMB Harris-Benedict, dieta 2000kcal, vitaminas A,B,C,D,E, minerales, keto, vegana mas arriba" },
+  medicina: { kws:["medicina","medico","cirugia","anatomia","fisiologia","doctor"], resp:"Medicina: 206 huesos, corazón 70 lpm, presión 120/80, sangre O+, farmacología, patología, cirugía, diagnóstico mas arriba" },
+  enfermeria: { kws:["enfermeria","enfermero"], resp:"Enfermería: Signos vitales, primeros auxilios, RCP 30:2, inyección IM, IV, cuidados mas arriba" },
+  balistica: { kws:["balistica","balas","proyectil","arma","forense","balistica"], resp:"Balística: Interior, exterior, efecto, trayectoria parabólica y= x tanθ - gx²/(2v²cos²θ), calibre 9mm 350m/s, 7.62 800m/s, peritaje forense mas arriba" },
+  criminologia: { kws:["criminologia","criminalistica","forense","perito"], resp:"Criminología/Criminalística: Lofoscopia, balística, ADN, perfil criminal, cadena custodia mas arriba" },
+  astrologia: { kws:["astrologia","zodiaco","signos","aries","tauro","horoscopo","carta astral"], resp:"Astrología: 12 signos Aries 21mar-19abr Fuego, Tauro Tierra, Géminis Aire, Cáncer Agua, Leo, Virgo, Libra, Escorpio, Sagitario, Capricornio, Acuario, Piscis, planetas, casas, ascendente mas arriba" },
+  astronomia: { kws:["astronomia","planeta","galaxia","estrella","universo"], resp:"Astronomía: 8 planetas, Sol 1.39M km diámetro, luz 300k km/s, Vía Láctea 100k años luz, agujero negro, Big Bang 13.8B años mas arriba" },
+  derecho: { kws:["derecho","abogado","leyes","constitucion"], resp:"Derecho: Constitución 136 arts, Penal, Civil, Laboral, Amparo, Mercantil, Internacional, derechos humanos mas arriba" },
+  psicologia: { kws:["psicologia","psicologo"], resp:"Psicología: Freud, Jung, conductismo, cognitiva, DSM-5, terapia CBT mas arriba" },
+  arquitectura: { kws:["arquitectura","arquitecto"], resp:"Arquitectura: AutoCAD, BIM, estructuras, concreto f'c=250, acero, diseño mas arriba" },
+  contaduria: { kws:["contaduria","contador","sat"], resp:"Contaduría: SAT, ISR, IVA 16%, estados financieros, NIF, auditoría mas arriba" },
+  gastronomia: { kws:["gastronomia","chef","cocina"], resp:"Gastronomía: Técnicas, madre salsas, temperaturas carne 63°C, panadería, repostería mas arriba" },
+  turismo: { kws:["turismo","hoteleria","viajes"], resp:"Turismo: Hotelería, agencias, ecoturismo, 8P marketing turístico mas arriba" },
+  pedagogia: { kws:["pedagogia","educacion","maestro"], resp:"Pedagogía: Didáctica, planeación, evaluación, neuroeducación mas arriba" },
+  comunicacion: { kws:["comunicacion","periodismo","medios"], resp:"Comunicación: Periodismo, locución, producción, marketing digital mas arriba" },
+  diseno: { kws:["diseño","grafico","industrial","moda"], resp:"Diseño: Gráfico Photoshop, Illustrator, UX/UI, industrial, moda mas arriba" },
+  musica: { kws:["musica","musico","instrumento","canto"], resp:"Música: Notas C-D-E-F-G-A-B, acordes, solfeo, producción mas arriba" },
+  deportes: { kws:["deportes","cultura fisica","entrenador","deportiva"], resp:"Educación Física: Anatomía, entrenamiento, fisiología ejercicio, nutrición deportiva mas arriba" },
+  // DGETI + TEC + UNIVERSAL
+  dgeti: { kws:["dgeti","cbtis","cetis"], resp:"DGETI 35: Programación, Electrónica, Mecatrónica, Mecánica, Electricidad, Lab Químico, Alimentos, Automotriz, Telecom mas arriba" },
+  leyes: { kws:["ley de newton","ley ohm","leyes"], resp:"Leyes: Newton F=ma, Ohm V=IR, Gravedad F=Gm1m2/r², Termodinámica, Maxwell, Constitución MX mas arriba" }
 };
 
 function detectar(t){
   const l=t.toLowerCase();
-  for(const cat in CONOCIMIENTO_UNIVERSAL){
-    const data=CONOCIMIENTO_UNIVERSAL[cat];
-    if(data.mapa){
-      for(const k in data.mapa) if(l.includes(k)) return data.mapa[k];
-    }
-    if(data.kws) for(const kw of data.kws) if(l.includes(kw)) return data.resp;
+  for(const cat in CARRERAS_OMNI){
+    for(const kw of CARRERAS_OMNI[cat].kws) if(l.includes(kw)) return CARRERAS_OMNI[cat].resp;
   }
   return null;
 }
 
 export async function buscarInternetReal(q){
   try{
-    const kw=q.toLowerCase().replace(/que es|explica|ley|licenciatura|dgeti/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
+    const kw=q.toLowerCase().replace(/que es|explica|licenciatura|carrera/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
     if(!kw) return "";
-    const r=await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, {headers:{"User-Agent":"BF-UNIVERSAL"}, signal:AbortSignal.timeout(3500)});
-    if(r.ok){const j=await r.json(); if(j?.extract) return j.extract.slice(0,500);}
+    const r=await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, {headers:{"User-Agent":"BF-OMNI"}, signal:AbortSignal.timeout(3500)});
+    if(r.ok){const j=await r.json(); if(j?.extract) return j.extract.slice(0,550);}
   }catch{} return "";
 }
 
 export async function responderConBotPropio(botId, prompt){
   const calc=calcular(prompt); if(calc) return `${calc.expr} = ${calc.res}`;
   const alg=algebra(prompt); if(alg) return alg;
-  const det=detectar(prompt); if(det) return det.slice(0,450);
+  const det=detectar(prompt); if(det) return det.slice(0,550);
   const web=await buscarInternetReal(prompt);
-  if(web) return web.slice(0,500);
-  return `${prompt.slice(0,100)}: Universal - licenciaturas, leyes, DGETI, todo lo conocido mas arriba.`;
+  if(web) return web.slice(0,550);
+  return `${prompt.slice(0,100)}: Omnisciencia BF - todas las carreras de la humanidad mas arriba.`;
 }
