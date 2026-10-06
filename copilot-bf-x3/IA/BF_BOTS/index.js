@@ -3,77 +3,93 @@ export const MIS_BOTS = { "BF-LIDER": { nombre:"LIDER BF" }, "BF-SUPREMO": { nom
 function calcular(t){
   const l=t.toLowerCase();
   let m=l.match(/(?:raiz cuadrada de|raíz cuadrada de|raiz de|raíz de|sqrt|√)\s*\(?(-?\d+(\.\d+)?)\)?/i);
-  if(m){const n=parseFloat(m[1]); if(n<0) return {expr:`√${n}`, res:`${Math.sqrt(Math.abs(n))}i`}; const r=Math.sqrt(n); return {expr:`√${n}`, res: Number.isInteger(r)?r: r.toFixed(4)};}
-  m=l.match(/(?:raiz cuadrada|raíz cuadrada)\s+(-?\d+(\.\d+)?)/i); if(m){const n=parseFloat(m[1]); const r=Math.sqrt(n); return {expr:`√${n}`, res: Number.isInteger(r)?r:r.toFixed(4)};}
-  const mt=t.match(/(\d+(\.\d+)?\s*[\+\-\*\/\%\^x]\s*\d+(\.\d+)?)+/i); if(mt){try{let e=mt[0].replace(/x/gi,'*').replace(/\^/g,'**').replace(/[^0-9+\-*/().% *]/g,''); if(/^[0-9+\-*/().% *]+$/.test(e)){const r=Function(`"use strict"; return (${e})`)(); if(isFinite(r)) return {expr:mt[0], res:r};}}catch{}} return null;
+  if(m){
+    const n=parseFloat(m[1]);
+    if(n<0){ const r=Math.sqrt(Math.abs(n)); return {expr:`√${n}`, res:`${r}i (número imaginario, porque √-1 = i)`, fluido:`La raíz cuadrada de ${n} es ${r}i. Es un número imaginario porque no existe un número real que al multiplicarse por sí mismo dé negativo.`};}
+    const r=Math.sqrt(n);
+    const res = Number.isInteger(r)? r : r.toFixed(4);
+    return {expr:`√${n}`, res, fluido:`La raíz cuadrada de ${n} es ${res}. Esto significa que ${res} × ${res} = ${n} aproximadamente. Es el número que multiplicado por sí mismo te da ${n}.`};
+  }
+  const mt=t.match(/(\d+(\.\d+)?\s*[\+\-\*\/\%\^x]\s*\d+(\.\d+)?)+/i);
+  if(mt){try{let e=mt[0].replace(/x/gi,'*').replace(/\^/g,'**').replace(/[^0-9+\-*/().% *]/g,''); if(/^[0-9+\-*/().% *]+$/.test(e)){const r=Function(`"use strict"; return (${e})`)(); if(isFinite(r)) return {expr:mt[0], res:r, fluido:`El resultado de ${mt[0]} es ${r}.`};}}catch{}}
+  return null;
 }
-function algebra(t){const l=t.toLowerCase().replace(/\s+/g,''); try{let m=l.match(/^(-?\d*\.?\d*)x([\+\-]\d+\.?\d*)?=(-?\d+\.?\d*)$/); if(m){let a=m[1]; if(a===''||a==='+')a=1;else if(a==='-')a=-1;else a=parseFloat(a); let b=m[2]?parseFloat(m[2]):0; let c=parseFloat(m[3]); return `x = ${(c-b)/a}`;} m=l.match(/^x([\+\-]\d+\.?\d*)=(-?\d+\.?\d*)$/); if(m)return `x = ${parseFloat(m[2])-parseFloat(m[1])}`; m=l.match(/^(-?\d*\.?\d*)x=(-?\d+\.?\d*)$/); if(m){let a=m[1]; if(a===''||a==='+')a=1;else if(a==='-')a=-1;else a=parseFloat(a); return `x = ${parseFloat(m[2])/a}`;} m=l.match(/^x\^2=(-?\d+\.?\d*)$/); if(m){let c=parseFloat(m[1]); return c>=0?`x = ±${Math.sqrt(c)}`:`x = ±${Math.sqrt(-c)}i`;}}catch{} return null;}
+function algebra(t){const l=t.toLowerCase().replace(/\s+/g,''); try{let m=l.match(/^(-?\d*\.?\d*)x([\+\-]\d+\.?\d*)?=(-?\d+\.?\d*)$/); if(m){let a=m[1]; if(a===''||a==='+')a=1;else if(a==='-')a=-1;else a=parseFloat(a); let b=m[2]?parseFloat(m[2]):0; let c=parseFloat(m[3]); const res=(c-b)/a; return `Para ${t}, despejamos x: x = (${c} - ${b}) / ${a} = ${res}. Entonces x vale ${res}.`;}}catch{} return null;}
 
-// DICCIONARIO TODOS LOS IDIOMAS
-const DICCIONARIO_GLOBAL = {
-  "hola": { en:"hello", fr:"bonjour", de:"hallo", it:"ciao", pt:"olá", ja:"こんにちは", zh:"你好", ru:"привет", ar:"مرحبا", ko:"안녕하세요", tr:"merhaba", nl:"hallo", pl:"cześć" },
-  "adios": { en:"goodbye", fr:"au revoir", de:"tschüss", it:"addio", pt:"adeus", ja:"さようなら", zh:"再见", ru:"до свидания", ar:"وداعا", ko:"안녕", tr:"güle güle" },
-  "ladrillo": { en:"brick", fr:"brique", de:"Ziegel", it:"mattone", pt:"tijolo", ja:"レンガ", zh:"砖", ru:"кирпич", ar:"طوب" },
-  "tabique": { en:"partition wall / brick", fr:"cloison", de:"Trennwand", it:"tramezzo", pt:"tabique", ja:"間仕切り", zh:"隔墙" },
-  "cemento": { en:"cement", fr:"ciment", de:"Zement", it:"cemento", pt:"cimento", ja:"セメント", zh:"水泥", ru:"цемент" },
-  "gracias": { en:"thank you", fr:"merci", de:"danke", it:"grazie", pt:"obrigado", ja:"ありがとう", zh:"谢谢", ru:"спасибо", ar:"شكرا" },
-  "agua": { en:"water", fr:"eau", de:"Wasser", it:"acqua", pt:"água", ja:"水", zh:"水", ru:"вода" },
-  "casa": { en:"house", fr:"maison", de:"Haus", it:"casa", pt:"casa", ja:"家", zh:"房子", ru:"дом" }
+const FLUIDO = {
+  albanileria: (q) => `🧱 Cómo pegar un ladrillo (tabique) - Paso a paso fácil:
+
+1. **Prepara todo:** Hilo, plomada, nivel, cuchara de albañil, botes, cemento y arena.
+
+2. **Traza derecho:** Pon dos estacas, amarra hilo bien tenso. Usa la escuadra 3-4-5: marca 60cm de un lado, 80cm del otro, la diagonal debe medir 100cm. Así queda a 90°.
+
+3. **Haz la mezcla:** 1 bote de cemento por 4 de arena. Mezcla en seco primero, luego agrega agua poco a poco hasta que quede pastosa, no aguada. Si la volteas, no debe escurrir.
+
+4. **Moja el tabique:** Sumerge los tabiques en agua 10 minutos. Si está seco, chupa el agua del mortero y no pega.
+
+5. **Pega:**
+   - Pon una cama de mezcla de 1.5cm sobre la base.
+   - Asienta el tabique y dale golpecitos con el mango de la cuchara hasta nivelarlo.
+   - Deja 1cm de junta vertical entre tabiques.
+
+6. **Amarra:** Cada hilada (fila) va cuatrapeada, o sea, el tabique de arriba queda a la mitad del de abajo. Así el muro no se cae. Cada 3 metros pon un castillo (4 varillas de 3/8).
+
+7. **Cuánto necesitas:** Para 1 metro cuadrado necesitas 25 tabiques de 7x14x28, medio bote de cemento y 2 botes de arena.
+
+¿Quieres que te calcule cuántos tabiques para tu muro? Dime los metros.`,
+
+  diccionario: async (palabra, idioma) => {
+    const dicc = {
+      "hola": { en:"hello", fr:"bonjour", de:"hallo", it:"ciao", pt:"olá", ja:"こんにちは", zh:"你好" },
+      "ladrillo": { en:"brick", fr:"brique", de:"Ziegel", it:"mattone", pt:"tijolo", ja:"レンガ", zh:"砖" },
+      "tabique": { en:"brick / partition wall", fr:"cloison", de:"Ziegelwand", it:"tramezzo", pt:"tabique", ja:"レンガ" },
+      "gracias": { en:"thank you", fr:"merci", de:"danke", it:"grazie", pt:"obrigado", ja:"ありがとう" }
+    };
+    const p = palabra.toLowerCase();
+    if(dicc[p]){
+      const todos = Object.entries(dicc[p]).map(([k,v])=> `• En ${k.toUpperCase()}: ${v}`).join("\n");
+      return `📚 La palabra "${palabra}" se dice así en otros idiomas:\n${todos}\n\nEjemplo: Si quieres decir "${palabra}" en inglés, dices "${dicc[p].en}".`;
+    }
+    try{
+      const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(p)}&langpair=es|en`, {signal:AbortSignal.timeout(2500)});
+      if(r.ok){ const j=await r.json(); if(j?.responseData?.translatedText) return `📚 "${palabra}" en inglés se dice "${j.responseData.translatedText}". ¿En qué otro idioma lo quieres?`; }
+    }catch{}
+    return `📚 "${palabra}" - No la tengo en mi diccionario local, pero puedo traducirla. ¿A qué idioma?`;
+  }
 };
 
-async function traducirDiccionario(texto){
-  const l=texto.toLowerCase();
-  // Detecta: traduce hola a ingles, diccionario ladrillo, como se dice casa en japones
-  let m=l.match(/(?:traduce|traducir|como se dice|diccionario|dictionary|translate)\s+["']?([a-záéíóúñ]+)["']?\s*(?:a|en|to|in)?\s*(ingles|english|frances|french|aleman|german|italiano|italian|portugues|portuguese|japones|japanese|chino|chinese|ruso|russian|arabe|arabic|coreano|korean|todos|all)?/i);
-  if(!m) return null;
-  const palabra=m[1].replace(/["']/g,"").trim();
-  const idioma=m[2]||"todos";
-  const entry=DICCIONARIO_GLOBAL[palabra];
-  if(entry){
-    if(idioma==="todos"||idioma==="all"){
-      let res=`${palabra} = ` + Object.entries(entry).map(([k,v])=>`${k.toUpperCase()}:${v}`).join(" | ");
-      return res.slice(0,600);
-    } else {
-      const mapLang={ingles:"en", english:"en", frances:"fr", french:"fr", aleman:"de", german:"de", italiano:"it", italian:"it", portugues:"pt", portuguese:"pt", japones:"ja", japanese:"ja", chino:"zh", chinese:"zh", ruso:"ru", russian:"ru", arabe:"ar", arabic:"ar", coreano:"ko", korean:"ko"};
-      const code=mapLang[idioma]||idioma;
-      return `${palabra} en ${idioma.toUpperCase()} = ${entry[code]||"traducción no directa, usa MyMemory mas arriba"}`;
-    }
-  }
-  // Si no está en diccionario local, usa API MyMemory gratis
-  try{
-    const langTo={ingles:"en", frances:"fr", aleman:"de", italiano:"it", portugues:"pt", japones:"ja", chino:"zh", ruso:"ru", arabe:"ar", coreano:"ko"};
-    const target=langTo[idioma]||"en";
-    const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(palabra)}&langpair=es|${target}`, {signal:AbortSignal.timeout(3000)});
-    if(r.ok){const j=await r.json(); if(j?.responseData?.translatedText) return `${palabra} en ${idioma} = ${j.responseData.translatedText}`;}
-  }catch{}
+function detectarFluido(t){
+  const l=t.toLowerCase().replace(/[()]/g," ");
+  if(l.includes("ladrillo")||l.includes("tabique")||l.includes("pegar")||l.includes("albañil")||l.includes("muro")) return FLUIDO.albanileria(t);
+  if(l.includes("agricultura")||l.includes("cultivo")||l.includes("siembra")) return "🌾 Agricultura explicada fácil:\nLa agricultura es cultivar la tierra. Necesitas: suelo con pH entre 6 y 7 (ni ácido ni básico), abono NPK (Nitrógeno para hojas, Fósforo para raíz, Potasio para fruto), agua 5 litros por metro cuadrado al día con riego por goteo para no desperdiciar. Ejemplo: el maíz produce 8 toneladas por hectárea si lo cuidas bien.";
+  if(l.includes("ganaderia")||l.includes("ganado")) return "🐄 Ganadería fácil:\nEs criar animales para leche o carne. Una vaca pesa 450kg, razas como Angus dan buena carne. Come 2.5% de su peso al día (unos 11kg). Si es lechera, da 25 litros diarios. Se usa inseminación artificial y pastoreo rotacional para que el pasto se recupere.";
+  if(l.includes("balistica")) return "🔫 Balística fácil:\nEs el estudio de cómo viaja una bala. Tiene 3 partes: interior (dentro del arma), exterior (en el aire) y efecto (cuando pega). La bala cae por gravedad, por eso la trayectoria es curva: y = x·tanθ - g·x²/(2·v²·cos²θ). Una 9mm va a 350 m/s, una 7.62 a 800 m/s.";
+  if(l.includes("astrologia")||l.includes("zodiaco")) return "♈ Astrología fácil:\nSon 12 signos según tu fecha de nacimiento. Cada uno tiene elemento: Aries (21 mar - 19 abr) es fuego y es líder, Tauro es tierra y es tranquilo, Géminis es aire y es curioso, Cáncer es agua y es emocional. Tu carta astral usa planetas y casas para decir tu personalidad.";
   return null;
 }
 
-const OMNI = {
-  albanileria: { kws:["albañileria","albañil","ladrillo","tabique","pegar ladrillo","como pegar","muro","block","mortero"], resp:"ALBAÑILERÍA:\n1. Traza hilo+plomada 3-4-5\n2. Mortero 1:4 (1 cemento+4 arena)\n3. Moja tabique 10min\n4. Cama 1.5cm, junta 1-1.5cm, cuatrapea\n5. 1m²=25 tabiques 7x14x28, 0.04m³ mezcla" },
-  agricultura: { kws:["agricultura","agronomia","cultivo"], resp:"Agricultura: pH 6-7, NPK, riego goteo, maíz 8t/ha" },
-  ganaderia: { kws:["ganaderia","ganado","bovino"], resp:"Ganadería: Bovino 450kg, Angus, leche 25L/día" },
-  balistica: { kws:["balistica","bala","proyectil"], resp:"Balística: y=x tanθ - gx²/2v²cos²θ, 9mm 350m/s" },
-  astrologia: { kws:["astrologia","zodiaco","aries"], resp:"Astrología: 12 signos, Aries fuego 21mar-19abr" },
-  diccionario: { kws:["diccionario","traduce","translate","idioma","como se dice"], resp:"Diccionario BF: Todos los idiomas ES-EN-FR-DE-IT-PT-JA-ZH-RU-AR-KO-TR. Ej: traduce hola a ingles = hello" }
-};
-
-function detectar(t){const l=t.toLowerCase().replace(/[()]/g," "); for(const c in OMNI) for(const k of OMNI[c].kws) if(l.includes(k)) return OMNI[c].resp; return null;}
-
 export async function buscarInternetReal(q){
   try{
-    const kw=q.toLowerCase().replace(/como|que es|diccionario|traduce|traducir/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
+    const kw=q.toLowerCase().replace(/como|que es|explica|como pegar/g,"").trim().split(" ").filter(w=>w.length>2).slice(0,3).join(" ");
     if(!kw) return "";
-    const r=await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, {headers:{"User-Agent":"BF-v8"}, signal:AbortSignal.timeout(3000)});
-    if(r.ok){const j=await r.json(); if(j?.extract) return j.extract.slice(0,550);}
+    const r=await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(kw)}`, {headers:{"User-Agent":"BF-v9-FLUIDO"}, signal:AbortSignal.timeout(3000)});
+    if(r.ok){const j=await r.json(); if(j?.extract) return j.extract.slice(0,600);}
   }catch{} return "";
 }
 
 export async function responderConBotPropio(botId, prompt){
-  const calc=calcular(prompt); if(calc) return `${calc.expr} = ${calc.res}`;
+  const calc=calcular(prompt); if(calc) return calc.fluido || `${calc.expr} = ${calc.res}`;
   const alg=algebra(prompt); if(alg) return alg;
-  const trad=await traducirDiccionario(prompt); if(trad) return trad;
-  const det=detectar(prompt); if(det) return det.slice(0,650);
-  const web=await buscarInternetReal(prompt); if(web) return web.slice(0,600);
-  return `${prompt.slice(0,100)}: BF Omni Universal mas arriba.`;
+
+  if(prompt.toLowerCase().match(/traduce|diccionario|como se dice/)){
+    let m=prompt.toLowerCase().match(/(?:traduce|diccionario|como se dice)\s+["']?([a-záéíóúñ]+)/i);
+    if(m){ const res=await FLUIDO.diccionario(m[1]); if(res) return res; }
+  }
+
+  const det=detectarFluido(prompt); if(det) return det;
+
+  const web=await buscarInternetReal(prompt);
+  if(web) return `Te explico de forma sencilla:\n${web}\n\n¿Quieres que lo explique más simple o más técnico?`;
+
+  return `Entiendo que preguntas por "${prompt}". Te explico de forma clara y directa, paso a paso, sin tecnicismos complicados. ¿Me dices un poco más para explicártelo mejor?`;
 }
