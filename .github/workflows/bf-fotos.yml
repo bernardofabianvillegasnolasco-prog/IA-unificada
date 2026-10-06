@@ -1,0 +1,26 @@
+name: BF x8 - Aprende fotos de Bernardo
+on:
+  schedule:
+    - cron: '0 12 * * *' # cada día al medio día
+  workflow_dispatch:
+jobs:
+  aprender:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: |
+          pip install instaloader -q
+          npm install
+          echo "📸 Aprendiendo de BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999"
+          echo "IG: @bfvillegas99 - FB: BFVillegas99"
+          instaloader --no-captions --dirname-pattern fotos --filename-pattern {shortcode} bfvillegas99 --count 10 || echo "Necesita login privado, saltando"
+          ls fotos || echo "Sin fotos publicas, usando perfil"
+          node -e "import('./src/modules/social-learn.js').then(m=>m.aprenderDeBernardo())"
+      - run: |
+          git config user.name "BF x8 - Foto Learner"
+          git config user.email "bernardo.1999@higuera.mx"
+          git add.bf_bio/legado/ || true
+          git commit -m "📸 $(date +%Y-%m-%d) Aprendido de redes de BERNARDO FABIAN VILLEGAS NOLAZCO - Más arriba que lo alto" || true
+          git push || true

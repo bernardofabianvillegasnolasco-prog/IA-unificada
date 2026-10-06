@@ -1,0 +1,16 @@
+copilot.js.bak
+src/modules/chat.js.bak
+node_modules/
+.env
+/sdcard
+*.log
+.DS_Store
+.bf_bio/legado/contacto-clasificado.json
+.bf_bio/rastreos/
+.bf_bio/fotos-bernardo/
+**/*clasificado*
+.bf_bio/legado/REGLAS-SECRETAS.md
+.bf_bio/
+*.log
+*.key
+.env
