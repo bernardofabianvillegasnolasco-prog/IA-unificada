@@ -10,16 +10,15 @@ export default async function handler(req,res){
       const {prompt} = req.body || {};
       if(!prompt) return res.status(400).json({error:"prompt requerido"});
       const web = await buscarInternetReal(prompt);
-      const x9 = await Promise.all(Object.keys(MIS_BOTS).map(async id=>({
+      const x2 = await Promise.all(Object.keys(MIS_BOTS).map(async id=>({
         cerebro:id,
         respuesta: await responderConBotPropio(id, prompt, web),
         creador:"BERNARDO FABIAN VILLEGAS NOLAZCO",
-        tipo:"BOT 100% PROPIO BF - CÓDIGO PURO",
-        cerebro_propio:true,
-        fuente: web? "Wiki + cerebro propio BF" : "Cerebro propio BF v2.2",
+        tipo:"BOT 100% PROPIO BF - 2 CEREBROS",
+        fuente: web? "Wiki + cerebro BF" : "Cerebro propio BF v2.3",
         timestamp:new Date().toISOString()
       })));
-      return res.json({ x9, modo:"9 BOTS 100% PROPIOS - CÓDIGO PURO BF - 0 APIs", web_verificado:!!web, web_data:web.slice(0,300), version:"2.2.0-bots-puros-propios", creador:"BERNARDO FABIAN VILLEGAS NOLAZCO", timestamp:new Date().toISOString() });
+      return res.json({ x2, modo:"2 BOTS PROPIOS - LIDER + SUPREMO", web_verificado:!!web, web_data:web.slice(0,300), version:"2.3.0-2-bots", creador:"BERNARDO FABIAN VILLEGAS NOLAZCO", total:2, timestamp:new Date().toISOString() });
     }catch(e){ return res.status(500).json({error:e.message}); }
   }
   return app(req,res);
