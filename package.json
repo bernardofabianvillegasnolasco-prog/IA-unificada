@@ -1,13 +1,21 @@
 {
-  "name": "ia-unificada",
-  "version": "1.0.0-x9-unificada",
-  "description": "IA Unificada + BF x9 ULTRA",
-  "main": "copilot-bf-x3/server.js",
-  "scripts": {
-    "start": "node copilot-bf-x3/server.js"
+  "name": "copilot-bf-x8-ultra",
+  "version": "1.0.40",
+  "description": "BF x8 ULTRA | IA UNIFICADA - 8 cerebros en consenso - Creado por BERNA Villegas",
+  "type": "module",
+  "bin": {
+    "bf": "src/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "@google/generative-ai": "^0.24.1",
+    "@vercel/analytics": "^2.0.1",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.6.0",
+    "jsonwebtoken": "^9.0.3",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.104.0"
   }
 }

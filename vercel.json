@@ -1,12 +1,10 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "copilot-bf-x3/server.js", "use": "@vercel/node" },
-    { "src": "copilot-bf-x3/api/**/*.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "copilot-bf-x3/api/$1" },
-    { "src": "/api/status", "dest": "copilot-bf-x3/server.js" },
-    { "src": "/(.*)", "dest": "copilot-bf-x3/server.js" }
+  "installCommand": "npm install --prefix copilot-bf-x3",
+  "buildCommand": "echo BF x9 ULTRA listo",
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/api/status", "destination": "/copilot-bf-x3/server.js" },
+    { "source": "/api/:path*", "destination": "/copilot-bf-x3/server.js" },
+    { "source": "/(.*)", "destination": "/copilot-bf-x3/server.js" }
   ]
 }
