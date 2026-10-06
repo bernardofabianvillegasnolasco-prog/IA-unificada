@@ -3,49 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF v5.0 UNIVERSAL TOTAL</title>
+<title>IA BF v7.0 OMNI AVANZADA</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px}
-.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:26px;margin:10px;box-shadow:0 0 25px #00ff88}
-h1{font-size:24px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.lema{color:#00ff88;font-weight:bold;font-size:10px;margin-bottom:10px;text-align:center}
-.tabs{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
-.tab{padding:6px 9px;border-radius:14px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:9px}
+body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px}
+.logo{width:78px;height:78px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:26px;margin:8px;box-shadow:0 0 25px #00ff88}
+h1{font-size:22px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lema{color:#00ff88;font-weight:bold;font-size:9px;margin-bottom:8px;text-align:center}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
+.tab{padding:6px 10px;border-radius:14px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:9px}
 .tab.active{background:#00ff88;color:#000;font-weight:bold}
-.box{width:100%;max-width:740px;display:flex;gap:6px;margin:8px 0}
-input{flex:1;padding:11px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;font-size:13px}
-button{padding:11px 14px;border-radius:10px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;font-size:11px}
-#result{width:100%;max-width:740px;display:grid;gap:8px}
-.card{background:#111;border:1px solid #222;border-radius:12px;padding:12px;font-size:13px}
+.box{width:100%;max-width:760px;display:flex;gap:5px;margin:6px 0;flex-wrap:wrap}
+input{flex:1;min-width:180px;padding:11px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;font-size:13px}
+button{padding:11px 13px;border-radius:10px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer;font-size:11px}
+button.sec{background:#222;color:#fff;border:1px solid #333}
+#result{width:100%;max-width:760px;display:grid;gap:8px}
+.card{background:#111;border:1px solid #222;border-radius:12px;padding:12px;font-size:13px;white-space:pre-wrap}
 .card.lider{border-left:3px solid #00ff88}
 .card.supremo{border-left:3px solid #00aaff}
+.card.vision{border-left:3px solid #ffaa00}
+.drop{width:100%;max-width:760px;border:2px dashed #333;border-radius:12px;padding:12px;text-align:center;color:#888;font-size:11px;margin-top:6px}
+#mem{font-size:9px;color:#555;margin-top:6px}
 </style>
 </head>
 <body>
 <div class="logo">BF</div>
-<h1>IA BF v5.0 UNIVERSAL TOTAL</h1>
-<div class="lema">Licenciaturas + Leyes + DGETI + Tecnológicos + Todo lo conocido por el ser humano</div>
+<h1>IA BF v7.0 OMNI AVANZADA</h1>
+<div class="lema">Albañilería + Agricultura + Ganadería + Nutriología + Medicina + Balística + Astrología + DGETI + Leyes + Memoria + Visión + Voz</div>
 <div class="tabs">
-<button class="tab active">🎓 Licenciaturas</button>
-<button class="tab">⚖️ Leyes</button>
-<button class="tab">🔧 DGETI</button>
-<button class="tab">🌍 Universal</button>
+<button class="tab active" onclick="setM('chat')">💬 Chat</button>
+<button class="tab" onclick="setM('alba')">🧱 Albañil</button>
+<button class="tab" onclick="setM('agri')">🌾 Agro</button>
+<button class="tab" onclick="setM('vision')">👁️ Visión</button>
+<button class="tab" onclick="setM('voz')">🎤 Voz</button>
+<button class="tab" onclick="setM('mem')">🧠 Memoria</button>
 </div>
 <div class="box">
-<input id="prompt" placeholder="Ej: raiz cuadrada 1554273638, derecho, medicina, ley de newton, programacion dgeti, todo..." onkeypress="if(event.key==='Enter') ejecutar()">
-<button onclick="ejecutar()">Responder</button>
+<input id="prompt" placeholder="Ej: como pegar ladrillo, raiz cuadrada 1554273638, agricultura maiz, balistica 9mm..." onkeypress="if(event.key==='Enter') go()">
+<button onclick="go()">Responder</button>
+<button class="sec" onclick="hablar()">🎤</button>
+<button class="sec" onclick="leer()">🔊</button>
 </div>
+<div class="drop" id="drop">📸 Arrastra foto de tarea aquí o <input type="file" id="file" accept="image/*" style="display:inline;color:#888"> - OCR lee tu foto</div>
 <div id="result"></div>
+<div id="mem"></div>
 <script>
-async function ejecutar(){
+let modo='chat'; let hist=JSON.parse(localStorage.getItem('bf_v7')||'[]'); let ultima="";
+function setM(m){modo=m; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active');}
+function save(p,r){hist.push({p,r,t:Date.now()}); if(hist.length>30) hist.shift(); localStorage.setItem('bf_v7',JSON.stringify(hist)); showMem();}
+function showMem(){document.getElementById('mem').innerHTML=`Memoria v7: ${hist.length} recuerdos | ${hist.slice(-3).map(h=>h.p.slice(0,18)).join(' | ')}`;}
+async function go(){
  const p=document.getElementById('prompt').value.trim(); if(!p) return;
- const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 BF Universal pensando mas arriba...</p></div>';
- const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
- const d=await r.json();
- resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+ const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card"><p>🧠 BF v7 Omni pensando mas arriba...</p></div>';
+ try{
+  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p, historial: hist.map(h=>h.p)})});
+  const d=await r.json();
+  resDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p><button class="sec" onclick="leerTexto(\`${b.respuesta.replace(/`/g,'').slice(0,200)}\`)">🔊 Leer</button></div>`).join('');
+  ultima=d.x2?d.x2[0].respuesta:""; save(p,ultima);
+ }catch(e){resDiv.innerHTML=`<div class="card"><p>Error ${e.message}</p></div>`;}
 }
-window.onload=()=>{document.getElementById('prompt').value='Raiz cuadrada de 1554273638'; ejecutar();}
+function hablar(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){alert('Usa Chrome'); return;} const rec=new SR(); rec.lang='es-MX'; rec.onresult=(e)=>{document.getElementById('prompt').value=e.results[0][0].transcript; go();}; rec.start();}
+function leerTexto(t){const u=new SpeechSynthesisUtterance(t); u.lang='es-MX'; u.rate=1.05; speechSynthesis.speak(u);}
+function leer(){if(ultima) leerTexto(ultima);}
+document.getElementById('file').addEventListener('change', async (e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  const resDiv=document.getElementById('result'); resDiv.innerHTML='<div class="card vision"><p>👁️ BF VISION leyendo foto...</p></div>';
+  const {data:{text}} = await Tesseract.recognize(file,'spa+eng');
+  document.getElementById('prompt').value=text.trim().slice(0,120);
+  resDiv.innerHTML=`<div class="card vision"><h3>👁️ Texto en foto:</h3><p>${text.slice(0,200)}</p><p>Resolviendo...</p></div>`;
+  const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:text})});
+  const d=await r.json();
+  resDiv.innerHTML+=(d.x2||[]).map(b=>`<div class="card ${b.cerebro.includes('LIDER')?'lider':'supremo'}"><h3>${b.cerebro}</h3><p>${b.respuesta}</p></div>`).join('');
+  save(`[FOTO] ${text.slice(0,30)}`, d.x2?d.x2[0].respuesta:"");
+});
+const drop=document.getElementById('drop');
+drop.addEventListener('dragover',e=>{e.preventDefault(); drop.style.borderColor='#00ff88';});
+drop.addEventListener('drop',e=>{e.preventDefault(); document.getElementById('file').files=e.dataTransfer.files; document.getElementById('file').dispatchEvent(new Event('change'));});
+showMem();
+window.onload=()=>{document.getElementById('prompt').value='Como pegar un ladrillo tabique'; go();}
 </script>
 </body>
 </html>
