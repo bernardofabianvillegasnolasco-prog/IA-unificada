@@ -4,54 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IA BF UNIVERSAL</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui;background:#000;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px}
-.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;font-size:26px;margin:10px;box-shadow:0 0 25px #00ff88}
-h1{font-size:26px;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sub{color:#888;font-size:11px;margin:6px}
-.box{width:100%;max-width:700px;display:flex;gap:6px;margin:10px 0}
-input{flex:1;padding:13px;border-radius:12px;border:1px solid #222;background:#111;color:#fff;font-size:14px}
-button{padding:13px 16px;border-radius:12px;border:0;background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
-button.sec{background:#1a1a1a;color:#fff;border:1px solid #333}
-#result{width:100%;max-width:700px;display:grid;gap:10px}
-.card{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap}
-.card.lider{border-left:3px solid #00ff88}
+body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:28px;box-shadow:0 0 30px #00ff88;margin:20px 0 10px}
+h1{font-size:30px;font-weight:800;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+.box{width:100%;max-width:680px;display:flex;gap:8px;margin:25px 0 15px}
+input{flex:1;padding:15px 18px;border-radius:14px;border:1px solid #1f1f1f;background:#111;color:#fff;font-size:15px;outline:none}
+input:focus{border-color:#00ff88}
+button{padding:15px 20px;border-radius:14px;border:0;background:#00ff88;color:#000;font-weight:800;cursor:pointer}
+#result{width:100%;max-width:680px;display:grid;gap:12px}
+.card{background:#111;border:1px solid #1a1a1a;border-radius:14px;padding:16px;line-height:1.6;font-size:14px;white-space:pre-wrap}
 </style>
 </head>
 <body>
 <div class="logo">BF</div>
 <h1>IA BF UNIVERSAL</h1>
-<div class="sub">Respuestas fluidas, como persona</div>
 <div class="box">
-<input id="prompt" placeholder="Pregunta lo que sea..." onkeypress="if(event.key==='Enter') go()">
+<input id="p" placeholder="Pregunta lo que sea..." onkeypress="if(event.key==='Enter') go()">
 <button onclick="go()">Responder</button>
-<button class="sec" onclick="hablar()">🎤</button>
-<button class="sec" onclick="leer()">🔊</button>
 </div>
 <div id="result"></div>
 <script>
-let ultima="";
-function limpiarParaVoz(t){
-  return t.replace(/\*\*/g,"").replace(/\*/g,"").replace(/#/g,"").replace(/🧱|📚|🌾|🐄|🔫|♈/g,"").trim();
-}
 async function go(){
- const p=document.getElementById('prompt').value.trim(); if(!p) return;
- const rDiv=document.getElementById('result'); rDiv.innerHTML='<div class="card"><p>Pensando...</p></div>';
- const r=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
- const d=await r.json();
- rDiv.innerHTML=(d.x2||[]).map(b=>`<div class="card lider"><p>${b.respuesta}</p><button class="sec" onclick="leerTexto('${b.respuesta.replace(/'/g,"").slice(0,250)}')">🔊 Escuchar</button></div>`).join('');
- ultima=d.x2?d.x2[0].respuesta:"";
+ const v=document.getElementById('p').value.trim(); if(!v) return;
+ const r=document.getElementById('result'); r.innerHTML='<div class="card">Pensando...</div>';
+ const d=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:v})}).then(x=>x.json());
+ r.innerHTML=d.x2.map(b=>`<div class="card">${b.respuesta.replace(/\*\*/g,"")}</div>`).join('');
 }
-function hablar(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return; const rec=new SR(); rec.lang='es-MX'; rec.onresult=e=>{document.getElementById('prompt').value=e.results[0][0].transcript; go();}; rec.start();}
-function leerTexto(t){
-  const limpio = limpiarParaVoz(t);
-  const u=new SpeechSynthesisUtterance(limpio);
-  u.lang='es-MX'; u.rate=0.95; u.pitch=1;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
-}
-function leer(){ if(ultima) leerTexto(ultima); }
 </script>
 </body>
 </html>
