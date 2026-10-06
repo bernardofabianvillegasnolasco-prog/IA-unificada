@@ -1,0 +1,33 @@
+{
+  "providers": [
+    {
+      "name": "openai",
+      "enabled": true,
+      "base_url_env": "OPENAI_BASE_URL",
+      "api_key_env": "OPENAI_API_KEY",
+      "model_env": "OPENAI_MODEL"
+    },
+    {
+      "name": "anthropic",
+      "enabled": true,
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "model_env": "ANTHROPIC_MODEL"
+    },
+    {
+      "name": "google",
+      "enabled": true,
+      "api_key_env": "GOOGLE_API_KEY",
+      "model_env": "GOOGLE_MODEL"
+    }
+  ],
+  "routing": {
+    "primary_provider": "openai",
+    "primary_model": "gpt-5",
+    "fallback_order": ["anthropic", "google"]
+  },
+  "policy": {
+    "require_evidence_for_claims": true,
+    "write_logs_before_final_response": true,
+    "never_store_secrets": true
+  }
+}
