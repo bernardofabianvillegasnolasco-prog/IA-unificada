@@ -1,22 +1,6 @@
 import app from '../copilot-bf-x3/server.js';
 import { BOTS_BF, responderBot } from '../copilot-bf-x3/IA/bots.js';
-
-async function buscarWeb(q){
-  const queries = [q, q.split(" ").slice(0,2).join(" "), "Llama", "Meta AI", "inteligencia artificial"];
-  if(q.toLowerCase().includes("llama")) queries.unshift("Llama (modelo de lenguaje)", "Llama");
-  for(const query of queries){
-    try{
-      const url = `https://es.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json`;
-      const s = await fetch(url, {headers:{"User-Agent":"IA-BF-x9/1.0"}}).then(r=>r.json()).catch(()=>null);
-      const title = s?.[1]?.[0];
-      if(title){
-        const sum = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, {headers:{"User-Agent":"IA-BF-x9/1.0"}}).then(r=>r.json()).catch(()=>null);
-        if(sum?.extract) return sum.extract;
-      }
-    }catch{}
-  }
-  return "";
-}
+import { buscarTodoInternet } from '../copilot-bf-x3/IA/buscador_web.js';
 
 export default async function handler(req,res){
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -28,22 +12,25 @@ export default async function handler(req,res){
     try{
       const {prompt} = req.body || {};
       if(!prompt) return res.status(400).json({error:"prompt requerido"});
-      const web = await buscarWeb(prompt);
+
+      const web = await buscarTodoInternet(prompt);
+
       const x9 = Object.keys(BOTS_BF).map(c=>({
         cerebro:c,
         respuesta: responderBot(c, prompt, web),
         creador: BOTS_BF[c].creador,
         rol: BOTS_BF[c].rol,
-        fuente: web? "Wikipedia verificada + IA BF" : "IA propia de BF Villegas",
+        fuente: web? "INTERNET COMPLETO (Brave/Tavily/Wiki/DDG/Jina)" : "IA propia BF",
         timestamp:new Date().toISOString()
       }));
+
       return res.json({
         x9,
-        modo:"9 IA propias de BF - universales",
+        modo:"todo internet + IA BF",
         web_verificado:!!web,
-        web_data:web.slice(0,250),
-        version:"1.0.46-x9-tuyos-universal",
-        creador:"BERNARDO FABIAN VILLEGAS NOLAZCO",
+        web_data:web.slice(0,400),
+        version:"1.0.49-x9-todo-internet",
+        fuentes:["Brave Search","Tavily","Serper","Wikipedia ES/EN","DuckDuckGo","Jina AI Reader"],
         timestamp:new Date().toISOString()
       });
     }catch(e){ return res.status(500).json({error:e.message}); }
