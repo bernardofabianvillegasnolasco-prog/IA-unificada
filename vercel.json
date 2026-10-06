@@ -1,10 +1,8 @@
 {
-  "installCommand": "npm install --prefix copilot-bf-x3",
-  "buildCommand": "echo BF x9 ULTRA listo",
-  "outputDirectory": ".",
+  "installCommand": "npm install --prefix copilot-bf-x3 && npm install --prefix copilot-bf-x3 --prefix . 2>/dev/null || npm install",
   "rewrites": [
-    { "source": "/api/status", "destination": "/copilot-bf-x3/server.js" },
-    { "source": "/api/:path*", "destination": "/copilot-bf-x3/server.js" },
-    { "source": "/(.*)", "destination": "/copilot-bf-x3/server.js" }
+    { "source": "/api/status", "destination": "/api/status.js" },
+    { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/(.*)", "destination": "/api/index.js" }
   ]
 }
