@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IA BF UNIVERSAL</title>
-<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:20px;min-height:100vh}.logo{width:82px;height:82px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:28px;box-shadow:0 0 30px #00ff88;margin:18px}h1{font-size:30px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.box{width:100%;max-width:680px;display:flex;gap:8px;margin:24px 0}input{flex:1;padding:15px 18px;border-radius:14px;border:1px solid #222;background:#111;color:#fff;font-size:15px}button{padding:15px 20px;border-radius:14px;border:0;background:#00ff88;color:#000;font-weight:800}#result{width:100%;max-width:680px;display:grid;gap:10px}.card{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:16px;line-height:1.6;white-space:pre-wrap}</style>
+<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:20px;min-height:100vh}.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:28px;box-shadow:0 0 30px #00ff88;margin:18px}h1{font-size:30px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.box{width:100%;max-width:680px;display:flex;gap:8px;margin:24px 0}input{flex:1;padding:15px 18px;border-radius:14px;border:1px solid #222;background:#111;color:#fff;font-size:15px}button{padding:15px 20px;border-radius:14px;border:0;background:#00ff88;color:#000;font-weight:800}#result{width:100%;max-width:680px;display:grid;gap:10px}.card{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:16px;line-height:1.6;white-space:pre-wrap}</style>
 </head><body>
 <div class="logo">BF</div>
 <h1>IA BF UNIVERSAL</h1>
-<div class="box"><input id="p" placeholder="Pregunta lo que sea..." onkeypress="if(event.key==='Enter') go()"><button onclick="go()">Responder</button></div>
+<div class="box">
+<input id="p" placeholder="pregunta lo que quieras" onkeypress="if(event.key==='Enter') go()">
+<button onclick="go()">Responder</button>
+</div>
 <div id="result"></div>
 <script>
 async function go(){
