@@ -1,6 +1,5 @@
 import app from '../copilot-bf-x3/server.js';
-import { BOTS_BF, responderBot } from '../copilot-bf-x3/IA/bots.js';
-import { buscarTodoInternet } from '../copilot-bf-x3/IA/buscador_web.js';
+import { MIS_BOTS, responderConBotPropio, buscarInternetReal } from '../copilot-bf-x3/IA/BF_BOTS/index.js';
 
 export default async function handler(req,res){
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -12,25 +11,24 @@ export default async function handler(req,res){
     try{
       const {prompt} = req.body || {};
       if(!prompt) return res.status(400).json({error:"prompt requerido"});
-
-      const web = await buscarTodoInternet(prompt);
-
-      const x9 = Object.keys(BOTS_BF).map(c=>({
-        cerebro:c,
-        respuesta: responderBot(c, prompt, web),
-        creador: BOTS_BF[c].creador,
-        rol: BOTS_BF[c].rol,
-        fuente: web? "INTERNET COMPLETO (Brave/Tavily/Wiki/DDG/Jina)" : "IA propia BF",
+      const web = await buscarInternetReal(prompt);
+      const x9 = Object.keys(MIS_BOTS).map(id=>({
+        cerebro:id,
+        respuesta: responderConBotPropio(id, prompt, web),
+        creador: MIS_BOTS[id].creador,
+        tipo: "BOT PROPIO BF",
+        estilo: MIS_BOTS[id].estilo,
+        fuente: web? "Internet real (Wiki/Jina)" : "Cerebro propio BF",
         timestamp:new Date().toISOString()
       }));
-
       return res.json({
         x9,
-        modo:"todo internet + IA BF",
+        modo:"9 BOTS PROPIOS DE BF - 100% tuyos - todo internet",
         web_verificado:!!web,
-        web_data:web.slice(0,400),
-        version:"1.0.49-x9-todo-internet",
-        fuentes:["Brave Search","Tavily","Serper","Wikipedia ES/EN","DuckDuckGo","Jina AI Reader"],
+        web_data:web.slice(0,350),
+        version:"2.0.0-bots-propios-bf",
+        creador:"BERNARDO FABIAN VILLEGAS NOLAZCO",
+        total_bots:9,
         timestamp:new Date().toISOString()
       });
     }catch(e){ return res.status(500).json({error:e.message}); }
