@@ -1,34 +1,29 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IA BF UNIVERSAL</title>
-<style>
-body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:20px;min-height:100vh}
-.logo{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:30px;box-shadow:0 0 35px #00ff88;margin:24px 0 12px}
-h1{font-size:32px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.box{width:100%;max-width:700px;display:flex;gap:8px;margin:26px 0}
-input{flex:1;padding:16px 18px;border-radius:16px;border:1px solid #222;background:#111;color:#fff;font-size:15px}
-button{padding:16px 22px;border-radius:16px;border:0;background:#00ff88;color:#000;font-weight:800;cursor:pointer}
-.card{width:100%;max-width:700px;background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;line-height:1.7;white-space:pre-wrap}
-</style>
-</head>
-<body>
-<div class="logo">BF</div>
-<h1>IA BF UNIVERSAL</h1>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IA BF UNIVERSAL</title>
+<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:20px;min-height:100vh}.logo{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:30px;box-shadow:0 0 35px #00ff88;margin:24px 0 12px}h1{font-size:32px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.box{width:100%;max-width:700px;display:flex;gap:8px;margin:26px 0}.card{width:100%;max-width:700px;background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;line-height:1.7;white-space:pre-wrap}input{flex:1;padding:16px 18px;border-radius:16px;border:1px solid #222;background:#111;color:#fff;font-size:15px}button{padding:16px 18px;border-radius:16px;border:0;background:#00ff88;color:#000;font-weight:800;cursor:pointer}button.sec{background:#1a1a1a;color:#fff;border:1px solid #333}</style>
+</head><body>
+<div class="logo">BF</div><h1>IA BF UNIVERSAL</h1>
 <div class="box">
 <input id="p" placeholder="pregunta lo que quieras" onkeypress="if(event.key==='Enter') go()">
 <button onclick="go()">Responder</button>
+<button class="sec" onclick="hablar()">🎤</button>
+<button class="sec" onclick="leer()">🔊</button>
 </div>
+<div style="color:#555;font-size:11px;margin-bottom:10px">📸 Foto: <input type="file" id="file" accept="image/*" style="color:#888"></div>
 <div id="result"></div>
 <script>
+let ultima="";
+function limpiar(t){return t.replace(/\*\*/g,"").replace(/\*/g,"").trim();}
 async function go(){
  const v=document.getElementById('p').value.trim(); if(!v) return;
  const r=document.getElementById('result'); r.innerHTML='<div class="card">Pensando...</div>';
  const d=await fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:v})}).then(x=>x.json());
- r.innerHTML=`<div class="card">${d.x2[0].respuesta.replace(/\*\*/g,'')}</div>`;
+ const txt=limpiar(d.x2[0].respuesta); ultima=txt;
+ r.innerHTML=`<div class="card">${txt}<br><br><button class="sec" onclick="leer()">🔊 Escuchar</button></div>`;
 }
+function hablar(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){alert('Usa Chrome');return;} const rec=new SR(); rec.lang='es-MX'; rec.onresult=e=>{document.getElementById('p').value=e.results[0][0].transcript; go();}; rec.start();}
+function leer(){if(!ultima) return; const u=new SpeechSynthesisUtterance(limpiar(ultima)); u.lang='es-MX'; u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u);}
+document.getElementById('file').addEventListener('change', async e=>{const file=e.target.files[0]; if(!file) return; const {data:{text}}=await Tesseract.recognize(file,'spa+eng'); document.getElementById('p').value=text.slice(0,150); go();});
 </script>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</body></html>
