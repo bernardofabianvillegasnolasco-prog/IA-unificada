@@ -9,73 +9,50 @@ export default async function handler(req, res) {
   const {prompt} = req.body||{};
   if(!prompt) return res.status(400).json({respuesta:"Falta prompt"});
   const qOrig = prompt.trim();
-  let q = qOrig.toLowerCase().replace(/×/g,'*').replace(/÷/g,'/').replace(/x/g,'*').replace(/X/g,'*');
+  let q = qOrig.toLowerCase().replace(/×/g,'*').replace(/÷/g,'/');
 
   const fetchJSON = async (url) => {
     try{ const r=await fetch(url); return r.ok?await r.json():null; }catch{return null;}
   };
 
-  // Matemática
+  // Matemática instantánea
   let t=q.replace(/,/g,'').replace(/\s*y\s*/g,'+').trim();
-  if(/^\d+(\.\d+)?\s*[\+\-\*\/\^]\s*\d+(\.\d+)?/.test(t)){
+  if(/^\d+(\.\d+)?\s*[\+\-\*\/\^]\s*\d+/.test(t)){
     try{
       const r=Function('"use strict";return ('+t.replace(/\^/g,'**')+')')();
-      if(!isNaN(r) && isFinite(r)) return res.status(200).json({respuesta: `✅ ${qOrig} = ${r}`});
+      if(!isNaN(r) && isFinite(r)) return res.status(200).json({respuesta: `✅ ${qOrig} = ${r}\n\n🧮 Cálculo - Conocimiento matemático humano`});
     }catch{}
   }
 
-  // DETECTOR DICCIONARIO RAE + INGLÉS + TODOS IDIOMAS
-  const esDiccionario = q.includes("que significa") || q.includes("que es") || q.includes("definicion") || q.includes("definición") || q.includes("diccionario") || q.includes("rae") || q.includes("significado de") || q.match(/^que es\s+\w+$/i) || q.match(/^define\s+\w+/i) || q.match(/^meaning of/i) || q.match(/^what does.* mean/i) || q.includes("en ingles") || q.includes("en inglés") || q.includes("traducir") || q.includes("translate");
+  if(cache[q.toLowerCase()]) return res.status(200).json({respuesta: `🧠 [Memoria Conocimiento Total] ${cache[q.toLowerCase()]}`});
 
-  if(esDiccionario){
-    try{
-      let palabra = qOrig;
-      palabra = palabra.replace(/que significa/gi,'').replace(/que es/gi,'').replace(/definicion de/gi,'').replace(/definición de/gi,'').replace(/diccionario/gi,'').replace(/rae/gi,'').replace(/significado de/gi,'').replace(/define/gi,'').replace(/meaning of/gi,'').replace(/what does/gi,'').replace(/mean/gi,'').replace(/en ingles/gi,'').replace(/en inglés/gi,'').replace(/traducir/gi,'').replace(/translate/gi,'').replace(/\?/g,'').trim();
-      palabra = palabra.split(" ")[0].trim();
-      if(palabra.length>=2){
-        const base=`https://${req.headers.host}`;
-        const lang = q.includes("en ingles")||q.includes("english")||/^[a-z]{2,}$/.test(palabra) && palabra.length<10 &&!palabra.includes(" ")? (q.includes("ingles")?"es":"en") : "es";
-        const dict = await fetchJSON(`${base}/api/diccionario?q=${encodeURIComponent(palabra)}&lang=${lang}`);
-        if(dict){
-          let resp = `📚 DICCIONARIO COMPLETO - ${dict.fuente || "RAE + Multi-idioma"}:\n\n`;
-          resp+=`Palabra: ${dict.palabra || palabra} [${dict.idioma || lang}]\n`;
-          if(dict.fonetica) resp+=`🔊 Fonética: ${dict.fonetica}\n`;
-          if(dict.definicion) resp+=`📖 RAE: ${dict.definicion}\n\n`;
-          if(dict.definiciones) resp+=`📖 Definiciones RAE:\n${dict.definiciones.map((d,i)=>`${i+1}. ${typeof d==='string'?d:d.definition||d}`).join("\n")}\n\n`;
-          if(dict.significados){
-            resp+= dict.significados.map(s=>`🔹 ${s.tipo}:\n${s.definiciones?.map((d,j)=>` ${j+1}. ${d}`).join("\n")}${s.ejemplo?`\n Ej: "${s.ejemplo}"`:''}`).join("\n\n") + "\n\n";
-          }
-          if(dict.traducciones){
-            resp+=`🌍 TRADUCCIONES:\n`;
-            Object.entries(dict.traducciones).forEach(([k,v])=>{ if(v) resp+=`• ${k}: ${v}\n`; });
-          }
-          resp+=`\n🔗 ${dict.url || `https://dle.rae.es/${encodeURIComponent(palabra)}`}`;
-          cache[q.toLowerCase()]=resp;
-          return res.status(200).json({respuesta: resp});
-        }
-      }
-    }catch{}
-  }
-
-  // Base general
+  // CONOCIMIENTO HUMANO TOTAL - intenta primero
+  let conocimientoHumano = null;
   try{
     const base=`https://${req.headers.host}`;
-    const db=await fetchJSON(`${base}/api/materias`);
-    if(db){
-      if(q.includes("ley") || q.includes("art")) return res.status(200).json({respuesta: `⚖️ LEYES GENERAL:\n${db.leyes_generales.leyes_federales.slice(0,5).join("\n")}`});
-      if(q.includes("medicina") || q.includes("torniquete") || q.includes("rcp")) return res.status(200).json({respuesta: `🩺 MEDICINA:\n${db.medicina_general.primeros_auxilios.slice(0,3).join("\n\n")}`});
+    const ch=await fetchJSON(`${base}/api/conocimiento?q=${encodeURIComponent(qOrig)}`);
+    if(ch?.conocimiento_humano?.length){
+      conocimientoHumano = ch.resumen;
     }
   }catch{}
 
-  // Motores IA x9
+  // MOTORES IA x9 - Todo el conocimiento de la IA
   const results=[];
   const groqKeys=[process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2, process.env.GROQ_API_KEY_3].filter(Boolean);
+
+  const systemPrompt = `Eres IA BF UNIVERSAL v31 - TODO EL CONOCIMIENTO HUMANO + IA.
+Creador: BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999 - La Higuera a Utah.
+Tienes acceso a TODO el conocimiento humano: Wikipedia total, RAE completa, leyes MX y mundiales, medicina, lógica, matemáticas, física, química, biología, historia, geografía, astronomía NASA, libros Open Library, ciencia arXiv, diccionario 50 idiomas, DGETI, TecNM, albañilería.
+Responde con todo el conocimiento disponible, específico, con fuentes si es posible.
+Pregunta: ${qOrig}
+Conocimiento humano previo encontrado: ${conocimientoHumano||'Ninguno aún'}`;
+
   for(let i=0;i<Math.min(3,groqKeys.length);i++){
     try{
       const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKeys[i]}`},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content:"Eres IA BF v30 diccionario RAE completo + traductor multi-idioma + experto leyes medicina."},{role:"user", content: qOrig}], max_tokens: 900})
+        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content: systemPrompt},{role:"user", content: qOrig}], max_tokens: 1000, temperature: 0.6})
       });
       const d=await r.json();
       const ans=d?.choices?.[0]?.message?.content;
@@ -88,7 +65,7 @@ export default async function handler(req, res) {
       const r=await fetch("https://api.perplexity.ai/chat/completions",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${process.env.PPLX_API_KEY}`},
-        body:JSON.stringify({model:"sonar-pro", messages:[{role:"user", content: qOrig}], max_tokens: 800})
+        body:JSON.stringify({model:"sonar-pro", messages:[{role:"system", content: systemPrompt},{role:"user", content: qOrig}], max_tokens: 1000})
       });
       const d=await r.json();
       const ans=d?.choices?.[0]?.message?.content;
@@ -96,17 +73,39 @@ export default async function handler(req, res) {
     }catch{}
   }
 
-  if(results.length) return res.status(200).json({respuesta: results[0]});
+  if(process.env.OPENAI_API_KEY){
+    try{
+      const r=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${process.env.OPENAI_API_KEY}`},
+        body:JSON.stringify({model:"gpt-4o-mini", messages:[{role:"system", content: systemPrompt},{role:"user", content: qOrig}], max_tokens: 900})
+      });
+      const d=await r.json();
+      const ans=d?.choices?.[0]?.message?.content;
+      if(ans) results.push(ans);
+    }catch{}
+  }
 
-  // Fallback Wikipedia
+  if(results.length){
+    const mejor = results[0] + (conocimientoHumano? `\n\n📚 CONOCIMIENTO HUMANO VERIFICADO:\n${conocimientoHumano}` : "");
+    cache[q.toLowerCase()]=mejor;
+    return res.status(200).json({respuesta: mejor});
+  }
+
+  // Si no hay keys, al menos conocimiento humano puro
+  if(conocimientoHumano){
+    return res.status(200).json({respuesta: `📚 TODO EL CONOCIMIENTO HUMANO sobre "${qOrig}":\n\n${conocimientoHumano}\n\n🔗 Fuentes: Wikipedia, Wikidata, RAE, Open Library, arXiv, NASA, Todo Internet`});
+  }
+
+  // Último fallback
   try{
     const s=await fetchJSON(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(qOrig)}&format=json&origin=*`);
     if(s?.query?.search?.[0]){
       const title=s.query.search[0].title;
       const sum=await fetchJSON(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-      if(sum?.extract) return res.status(200).json({respuesta: `🌐 ${sum.title}: ${sum.extract}\n🔗 ${sum.content_urls?.desktop?.page}`});
+      if(sum?.extract) return res.status(200).json({respuesta: `🌐 ${sum.title}: ${sum.extract}\n🔗 ${sum.content_urls?.desktop?.page}\n\n📚 Esto es parte del conocimiento humano total disponible`});
     }
   }catch{}
 
-  return res.status(200).json({respuesta: `Dime palabra para diccionario: "que significa albañilería", "definicion de torniquete", "en ingles hola", "RAE construir"`});
+  return res.status(200).json({respuesta: `BF, dime cualquier tema y te traigo TODO el conocimiento humano + IA sobre eso. Ej: "que es la gravedad", "leyes de newton", "quien fue Einstein", "como se hace un muro", "definicion de torniquete", "historia de Mexico"`});
 }
