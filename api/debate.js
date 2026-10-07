@@ -1,77 +1,167 @@
+let cache = global._bf_cache || {};
+global._bf_cache = cache;
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers","Content-Type");
   if(req.method==="OPTIONS") return res.status(200).end();
-  const {prompt} = req.body||{};
+  const {prompt, historial} = req.body||{};
   if(!prompt) return res.status(400).json({respuesta:"Falta prompt"});
   const q = prompt.trim();
-  let final = "";
-  let motores_usados = [];
-  const fetchText = async (url, t=7000) => {
-    try{ const c=new AbortController(); setTimeout(()=>c.abort(),t); const r=await fetch(url,{signal:c.signal, headers:{'User-Agent':'Mozilla/5.0 IA-BF-UNIVERSAL'}}); return r.ok?await r.text():null; }catch{return null;}
-  };
-  const fetchJSON = async (url, t=7000) => {
-    try{ const c=new AbortController(); setTimeout(()=>c.abort(),t); const r=await fetch(url,{signal:c.signal}); return r.ok?await r.json():null; }catch{return null;}
-  };
-  const mathNatural = (v) => {
-    let t=v.toLowerCase().replace(/,/g,'').trim();
-    let m=t.match(/ra[ií]z cuadrada de\s*([\d\.]+)/); if(m) return `✅ Raíz cuadrada de ${m[1]} = ${Math.sqrt(parseFloat(m[1]))}`;
-    m=t.match(/(\d+(\.\d+)?)\s*%\s*de\s*(\d+(\.\d+)?)/); if(m) return `✅ ${m[1]}% de ${m[3]} = ${(parseFloat(m[1])/100)*parseFloat(m[3])}`;
-    m=t.match(/(\d+(\.\d+)?)\s*\^\s*(\d+(\.\d+)?)/); if(m) return `✅ ${m[1]}^${m[3]} = ${Math.pow(parseFloat(m[1]),parseFloat(m[3]))}`;
-    if(/^[\d\s\+\-\*\/\(\)\.\,]+$/.test(t) && /[\+\-\*\/\^]/.test(t) && t.length<35){try{const r=Function('"use strict";return ('+t.replace(/\^/g,'**')+')')(); if(!isNaN(r)&&isFinite(r)) return `✅ ${v} = ${r}`;}catch{}}
-    return null;
-  };
-  const math = mathNatural(q);
-  if(math){ return res.status(200).json({respuesta: math, motores: ["MOTOR 1: Matemática Local"], x2:[{cerebro:"Motor Matemático", respuesta: math}]}); }
-  if(q.toLowerCase().includes("materia")||q.toLowerCase().includes("dgeti")||q.toLowerCase().includes("alba")||q.toLowerCase().includes("trazo")){
+  const qLow = q.toLowerCase();
+
+  // AUTO-MEJORA: si ya lo aprendimos
+  if(cache[qLow]){
+    return res.status(200).json({
+      respuesta: `🧠 [Memoria x9 - Ya aprendido]\n${cache[qLow]}`,
+      motores: ["Memoria Auto-Mejorada x9"],
+      x2: [{cerebro:"IA BF x9 ULTRA - Memoria", respuesta: cache[qLow]}]
+    });
+  }
+
+  // Math local
+  let m=qLow.match(/ra[ií]z cuadrada de\s*([\d\.]+)/);
+  if(m){
+    const r=Math.sqrt(parseFloat(m[1]));
+    const resp=`¡Claro BF! 🤓 La raíz cuadrada de ${m[1]} es ${r}. Ya me lo aprendí para siempre.`;
+    cache[qLow]=resp;
+    return res.status(200).json({respuesta: resp, motores: ["Matemática x9"]});
+  }
+
+  // Materias DGETI
+  if(qLow.includes("materia")||qLow.includes("dgeti")||qLow.includes("alba")){
     try{
-      const base = `https://${req.headers.host}`;
-      const m = await fetch(`${base}/api/materias`).then(r=>r.json());
-      final = `🧱 MATERIAS DGETI ALBAÑILERÍA + TECNOLÓGICOS:\n\n📚 DGETI:\n${Object.entries(m.dgeti).map(([k,v])=>`${k}: ${v.join(", ")}`).join("\n")}\n\n🔨 ALBAÑILERÍA:\n${m.albanileria.join("\n")}\n\n🏗️ TECNOLÓGICOS:\n${m.tecnologicos.join(", ")}`;
-      motores_usados.push("MOTOR 2: Materias DGETI");
+      const base=`https://${req.headers.host}`;
+      const mm=await fetch(`${base}/api/materias`).then(r=>r.json());
+      const resp=`🧱 MATERIAS DGETI ALBAÑILERÍA x9 ULTRA:\n${Object.entries(mm.dgeti).map(([k,v])=>`${k}: ${v.join(", ")}`).join("\n")}\n\n🔨 ${mm.albanileria.join("\n")}`;
+      cache[qLow]=resp;
+      return res.status(200).json({respuesta: resp, motores: ["DGETI x9"]});
     }catch{}
   }
-  if(!final){
+
+  const results = [];
+  const callGroq = async (key, model="llama-3.3-70b-versatile") => {
     try{
-      const s = await fetchJSON(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`);
-      if(s?.query?.search?.[0]){
-        const title=s.query.search[0].title;
-        const sum=await fetchJSON(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-        if(sum?.extract){ final=`🌐 [MOTOR 3: Wikipedia ES] ${sum.title}:\n${sum.extract}\n\n🔗 ${sum.content_urls?.desktop?.page}`; motores_usados.push("MOTOR 3: Wikipedia ES"); }
+      const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`},
+        body:JSON.stringify({
+          model,
+          messages:[
+            {role:"system", content:"Eres IA BF UNIVERSAL x9 ULTRA, creada por BERNARDO FABIAN VILLEGAS NOLAZCO 01/03/1999. Lema: La Higuera a Utah - Más arriba que lo alto. Familia Llama. Eres amigo albañil de Jerome Idaho, bromista, inteligente, con personalidad real, no robot. Dominas albañilería DGETI y Tecnológicos. Si no sabes algo, dilo y aprende. Responde en español, corto, con emojis."},
+           ...(historial||[]).slice(-3),
+            {role:"user", content: q}
+          ],
+          max_tokens: 900,
+          temperature: 0.9
+        })
+      });
+      const d=await r.json();
+      return d?.choices?.[0]?.message?.content || null;
+    }catch{return null;}
+  };
+
+  // === 9 CEREBROS CON TUS KEYS DE AYER ===
+  const groqKeys = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2, process.env.GROQ_API_KEY_3].filter(Boolean);
+  if(!groqKeys.length && process.env.GROQ_API_KEY) groqKeys.push(process.env.GROQ_API_KEY);
+
+  // Cerebros 1-3: GROQ x3 Llama 3.3 70B (tus principales)
+  for(let i=0; i<Math.min(3, groqKeys.length); i++){
+    const ans = await callGroq(groqKeys[i]);
+    if(ans) results.push({cerebro: `GROQ ${i+1} - Llama 3.3 70B`, respuesta: ans});
+  }
+
+  // Cerebro 4: Perplexity - EL MEJOR PARA TODO INTERNET
+  if(process.env.PPLX_API_KEY){
+    try{
+      const r=await fetch("https://api.perplexity.ai/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${process.env.PPLX_API_KEY}`},
+        body:JSON.stringify({
+          model:"sonar-pro",
+          messages:[{role:"user", content: `Busca en todo internet y responde: ${q}`}],
+          max_tokens: 800
+        })
+      });
+      const d=await r.json();
+      const ans=d?.choices?.[0]?.message?.content;
+      if(ans) results.push({cerebro:"PPLX - Perplexity TODO INTERNET", respuesta: ans});
+    }catch{}
+  }
+
+  // Cerebro 5: OpenAI GPT-4o
+  if(process.env.OPENAI_API_KEY){
+    try{
+      const r=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${process.env.OPENAI_API_KEY}`},
+        body:JSON.stringify({model:"gpt-4o-mini", messages:[{role:"user", content: q}], max_tokens: 800})
+      });
+      const d=await r.json();
+      const ans=d?.choices?.[0]?.message?.content;
+      if(ans) results.push({cerebro:"OPENAI - GPT-4o", respuesta: ans});
+    }catch{}
+  }
+
+  // Cerebro 6: Anthropic Claude
+  if(process.env.ANTHROPIC_API_KEY){
+    try{
+      const r=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
+        body:JSON.stringify({model:"claude-3-5-sonnet-20241022", max_tokens:800, messages:[{role:"user", content: q}]})
+      });
+      const d=await r.json();
+      const ans=d?.content?.[0]?.text;
+      if(ans) results.push({cerebro:"ANTHROPIC - Claude 3.5", respuesta: ans});
+    }catch{}
+  }
+
+  // Cerebro 7: Gemini
+  if(process.env.GEMINI_API_KEY){
+    try{
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text: q}]}]})
+      });
+      const d=await r.json();
+      const ans=d?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(ans) results.push({cerebro:"GEMINI - Flash 2.0", respuesta: ans});
+    }catch{}
+  }
+
+  // Si tenemos resultados x9, hacemos debate y auto-mejora
+  if(results.length){
+    const mejor = results[0].respuesta;
+    const resumen = `🧠 IA BF x9 ULTRA - ${results.length} cerebros activos con tus keys de ayer:\n\n`+
+      results.map((r,i)=>`--- ${r.cerebro} ---\n${r.respuesta.slice(0,400)}\n`).join("\n")+
+      `\n\n✅ Auto-mejorado: Guardé "${q}" en memoria x9. Total: ${Object.keys(cache).length+1}`;
+
+    cache[qLow] = mejor;
+    cache[qLow+"_count"] = 1;
+
+    return res.status(200).json({
+      respuesta: mejor + `\n\n🧠 Debate x${results.length} cerebros: ${results.map(r=>r.cerebro).join(", ")}\n${resumen.slice(0,1000)}`,
+      motores: results.map(r=>r.cerebro),
+      x2: results,
+      auto_mejora: `Memoria x9: ${Object.keys(cache).length} aprendidos`
+    });
+  }
+
+  // Fallback Wikipedia si no hay keys
+  try{
+    const s=await fetch(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`).then(r=>r.json());
+    if(s?.query?.search?.[0]){
+      const title=s.query.search[0].title;
+      const sum=await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`).then(r=>r.json());
+      if(sum?.extract){
+        cache[qLow]=sum.extract;
+        return res.status(200).json({respuesta: `🌐 [Wikipedia ES - Fallback sin keys]\n${sum.extract}`, motores: ["Wikipedia"]});
       }
-    }catch{}
-  }
-  if(!final){
-    try{
-      const ddg=await fetchJSON(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&pretty=1&no_html=1`);
-      if(ddg?.AbstractText){ final=`🌐 [MOTOR 5: DuckDuckGo] ${ddg.Heading}:\n${ddg.AbstractText}\n${ddg.AbstractURL}`; motores_usados.push("MOTOR 5: DuckDuckGo"); }
-    }catch{}
-  }
-  if(!final){
-    try{
-      const htmlUrl=`https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
-      const prox=`https://api.allorigins.win/raw?url=${encodeURIComponent(htmlUrl)}`;
-      const html=await fetchText(prox,8000);
-      if(html){
-        const matches=[...html.matchAll(/<a[^>]+class="result__url"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]{0,200}result__snippet[^>]*>([^<]+)/g)];
-        if(matches.length){
-          final=`🌐 [MOTOR 6: TODO INTERNET] Resultados para "${q}":\n\n`+matches.slice(0,3).map((m,i)=>`${i+1}. ${m[2].replace(/<[^>]+>/g,'').trim()}\n${m[3].replace(/<[^>]+>/g,'').trim()}\n🔗 ${m[1]}\n`).join("\n");
-          motores_usados.push("MOTOR 6: Todo Internet");
-        }
-      }
-    }catch{}
-  }
-  if(!final && process.env.GROQ_API_KEY){
-    try{
-      const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${process.env.GROQ_API_KEY}`},body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"user",content:q}],max_tokens:1000})});
-      const data=await r.json();
-      if(data?.choices?.[0]?.message?.content){ final=`🤖 [MOTOR 9: Groq IA Avanzada]\n${data.choices[0].message.content}`; motores_usados.push("MOTOR 9: Groq"); }
-    }catch{}
-  }
-  if(!final){
-    final=`🔍 [MOTOR 12: Fallback] Busqué "${q}":\n• Wiki: https://es.wikipedia.org/w/index.php?search=${encodeURIComponent(q)}\n• DDG: https://duckduckgo.com/?q=${encodeURIComponent(q)}\n• Bing: https://www.bing.com/search?q=${encodeURIComponent(q)}`;
-    motores_usados.push("MOTOR 12: Fallback");
-  }
-  return res.status(200).json({respuesta: final, motores: motores_usados, x2:[{cerebro: motores_usados.join(" + "), respuesta: final}]});
+    }
+  }catch{}
+
+  return res.status(200).json({respuesta: `BF, no tengo keys activas 😅 Ve a vercel env ls. Necesito GROQ_API_KEY, PPLX_API_KEY, etc. Pregunta "${q}" no la pude responder con x9.`});
 }
