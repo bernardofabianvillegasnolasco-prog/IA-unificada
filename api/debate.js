@@ -14,9 +14,6 @@ export default async function handler(req, res) {
   const fetchJSON = async (url) => {
     try{ const r=await fetch(url); return r.ok?await r.json():null; }catch{return null;}
   };
-  const fetchText = async (url) => {
-    try{ const r=await fetch(url); return r.ok?await r.text():null; }catch{return null;}
-  };
 
   // Matemática
   let t=q.replace(/,/g,'').replace(/\s*y\s*/g,'+').trim();
@@ -27,41 +24,50 @@ export default async function handler(req, res) {
     }catch{}
   }
 
-  // Búsqueda en base GENERAL
+  // DETECTOR DICCIONARIO RAE + INGLÉS + TODOS IDIOMAS
+  const esDiccionario = q.includes("que significa") || q.includes("que es") || q.includes("definicion") || q.includes("definición") || q.includes("diccionario") || q.includes("rae") || q.includes("significado de") || q.match(/^que es\s+\w+$/i) || q.match(/^define\s+\w+/i) || q.match(/^meaning of/i) || q.match(/^what does.* mean/i) || q.includes("en ingles") || q.includes("en inglés") || q.includes("traducir") || q.includes("translate");
+
+  if(esDiccionario){
+    try{
+      let palabra = qOrig;
+      palabra = palabra.replace(/que significa/gi,'').replace(/que es/gi,'').replace(/definicion de/gi,'').replace(/definición de/gi,'').replace(/diccionario/gi,'').replace(/rae/gi,'').replace(/significado de/gi,'').replace(/define/gi,'').replace(/meaning of/gi,'').replace(/what does/gi,'').replace(/mean/gi,'').replace(/en ingles/gi,'').replace(/en inglés/gi,'').replace(/traducir/gi,'').replace(/translate/gi,'').replace(/\?/g,'').trim();
+      palabra = palabra.split(" ")[0].trim();
+      if(palabra.length>=2){
+        const base=`https://${req.headers.host}`;
+        const lang = q.includes("en ingles")||q.includes("english")||/^[a-z]{2,}$/.test(palabra) && palabra.length<10 &&!palabra.includes(" ")? (q.includes("ingles")?"es":"en") : "es";
+        const dict = await fetchJSON(`${base}/api/diccionario?q=${encodeURIComponent(palabra)}&lang=${lang}`);
+        if(dict){
+          let resp = `📚 DICCIONARIO COMPLETO - ${dict.fuente || "RAE + Multi-idioma"}:\n\n`;
+          resp+=`Palabra: ${dict.palabra || palabra} [${dict.idioma || lang}]\n`;
+          if(dict.fonetica) resp+=`🔊 Fonética: ${dict.fonetica}\n`;
+          if(dict.definicion) resp+=`📖 RAE: ${dict.definicion}\n\n`;
+          if(dict.definiciones) resp+=`📖 Definiciones RAE:\n${dict.definiciones.map((d,i)=>`${i+1}. ${typeof d==='string'?d:d.definition||d}`).join("\n")}\n\n`;
+          if(dict.significados){
+            resp+= dict.significados.map(s=>`🔹 ${s.tipo}:\n${s.definiciones?.map((d,j)=>` ${j+1}. ${d}`).join("\n")}${s.ejemplo?`\n Ej: "${s.ejemplo}"`:''}`).join("\n\n") + "\n\n";
+          }
+          if(dict.traducciones){
+            resp+=`🌍 TRADUCCIONES:\n`;
+            Object.entries(dict.traducciones).forEach(([k,v])=>{ if(v) resp+=`• ${k}: ${v}\n`; });
+          }
+          resp+=`\n🔗 ${dict.url || `https://dle.rae.es/${encodeURIComponent(palabra)}`}`;
+          cache[q.toLowerCase()]=resp;
+          return res.status(200).json({respuesta: resp});
+        }
+      }
+    }catch{}
+  }
+
+  // Base general
   try{
     const base=`https://${req.headers.host}`;
     const db=await fetchJSON(`${base}/api/materias`);
     if(db){
-      if(q.includes("ley") || q.includes("art") || q.includes("constitucion") || q.includes("trabajo") || q.includes("imss") || q.includes("codigo") || q.includes("nom")){
-        let resp=`⚖️ LEYES EN GENERAL - ESPECÍFICO:\n\n`+
-        `📜 CONSTITUCIÓN:\n${db.leyes_generales.constitucion_mx.join("\n")}\n\n`+
-        `📚 FEDERALES:\n${db.leyes_generales.leyes_federales.join("\n")}\n\n`+
-        `🏗️ NOMS:\n${db.leyes_generales.noms.join("\n")}`;
-        if(q.includes("trabajo")) resp+=`\n\n💼 LFT DETALLADO: Jornada diurna 8h, nocturna 7h, mixta 7.5h, 1 día descanso por 6, vacaciones 12 días año 1 +2 cada año, prima 25%, aguinaldo 15 días, utilidades 10%, liquidación 90 días + 20 días por año si despido injustificado`;
-        if(q.includes("torniquete")||q.includes("primeros")||q.includes("rcp")||q.includes("hemorragia")||q.includes("salud")) resp=`🩺 MEDICINA GENERAL:\n${db.medicina_general.primeros_auxilios.join("\n\n")}`;
-        return res.status(200).json({respuesta: resp});
-      }
-      if(q.includes("medicina") || q.includes("torniquete") || q.includes("rcp") || q.includes("hemorragia") || q.includes("quemadura") || q.includes("fractura") || q.includes("primeros auxilios") || q.includes("paracetamol") || q.includes("botiquin")){
-        const resp=`🩺 MEDICINA EN GENERAL - ESPECÍFICO:\n\n`+
-        `🚑 PRIMEROS AUXILIOS:\n${db.medicina_general.primeros_auxilios.join("\n\n")}\n\n`+
-        `🧍 ANATOMÍA: ${db.medicina_general.anatomia_basica.join(", ")}\n\n`+
-        `💊 MEDICAMENTOS: ${db.medicina_general.medicamentos_comunes.join("\n")}\n\n`+
-        `🦠 ENFERMEDADES: ${db.medicina_general.enfermedades_comunes.join("\n")}`;
-        return res.status(200).json({respuesta: resp});
-      }
-      if(q.includes("logica") || q.includes("silogismo") || q.includes("falacia") || q.includes("filosofia") || q.includes("etica") || q.includes("metodo cientifico")){
-        return res.status(200).json({respuesta: `🧠 LÓGICA Y FILOSOFÍA EN GENERAL:\n\n${db.logica_filosofia.join("\n\n")}`});
-      }
-      if(q.includes("carrera") || q.includes("que estudiar")){
-        return res.status(200).json({respuesta: `🎓 CARRERAS EN GENERAL:\n\n${db.carreras_generales.join("\n\n")}`});
-      }
-      if(q.includes("materia") || q.includes("dgeti")){
-        return res.status(200).json({respuesta: `📚 DGETI GENERAL:\n${Object.entries(db.dgeti_general).map(([k,v])=>`${k}: ${v.join(", ")}`).join("\n")}`});
-      }
+      if(q.includes("ley") || q.includes("art")) return res.status(200).json({respuesta: `⚖️ LEYES GENERAL:\n${db.leyes_generales.leyes_federales.slice(0,5).join("\n")}`});
+      if(q.includes("medicina") || q.includes("torniquete") || q.includes("rcp")) return res.status(200).json({respuesta: `🩺 MEDICINA:\n${db.medicina_general.primeros_auxilios.slice(0,3).join("\n\n")}`});
     }
   }catch{}
 
-  // Motores IA x9 si hay keys
+  // Motores IA x9
   const results=[];
   const groqKeys=[process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2, process.env.GROQ_API_KEY_3].filter(Boolean);
   for(let i=0;i<Math.min(3,groqKeys.length);i++){
@@ -69,7 +75,7 @@ export default async function handler(req, res) {
       const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKeys[i]}`},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content:"Eres IA BF UNIVERSAL v29 TODO EN GENERAL, experto en leyes generales MX, medicina general, lógica, DGETI, TecNM, albañilería. Responde específico y general."},{role:"user", content: qOrig}], max_tokens: 900})
+        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content:"Eres IA BF v30 diccionario RAE completo + traductor multi-idioma + experto leyes medicina."},{role:"user", content: qOrig}], max_tokens: 900})
       });
       const d=await r.json();
       const ans=d?.choices?.[0]?.message?.content;
@@ -90,12 +96,9 @@ export default async function handler(req, res) {
     }catch{}
   }
 
-  if(results.length){
-    cache[q.toLowerCase()]=results[0];
-    return res.status(200).json({respuesta: results[0]});
-  }
+  if(results.length) return res.status(200).json({respuesta: results[0]});
 
-  // Fallback Wikipedia general
+  // Fallback Wikipedia
   try{
     const s=await fetchJSON(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(qOrig)}&format=json&origin=*`);
     if(s?.query?.search?.[0]){
@@ -105,5 +108,5 @@ export default async function handler(req, res) {
     }
   }catch{}
 
-  return res.status(200).json({respuesta: `BF, dime específico: leyes generales, medicina general, lógica, carreras, DGETI, o cualquier tema general y te respondo detallado. Tu pregunta "${qOrig}" la busco en todo internet también.`});
+  return res.status(200).json({respuesta: `Dime palabra para diccionario: "que significa albañilería", "definicion de torniquete", "en ingles hola", "RAE construir"`});
 }
