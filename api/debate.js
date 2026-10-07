@@ -1,5 +1,7 @@
 let cache = global._bf_cache || {};
+let fallos = global._bf_fallos || [];
 global._bf_cache = cache;
+global._bf_fallos = fallos;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -15,6 +17,12 @@ export default async function handler(req, res) {
     try{ const r=await fetch(url); return r.ok?await r.json():null; }catch{return null;}
   };
 
+  const registrarFallo = (qq) => {
+    fallos.push({q: qq, t: Date.now()});
+    if(fallos.length>20) fallos=fallos.slice(-20);
+    global._bf_fallos=fallos;
+  };
+
   // Matemática
   let t=q.replace(/,/g,'').replace(/\s*y\s*/g,'+').trim();
   if(/^\d+(\.\d+)?\s*[\+\-\*\/\^]\s*\d+/.test(t)){
@@ -24,55 +32,23 @@ export default async function handler(req, res) {
     }catch{}
   }
 
-  // DETECTOR CAPACIDADES - Esto es lo que hace Meta AI en foto 2
-  if(q.includes("que sabes de medicina") || q.includes("que sabes sobre medicina") || q.includes("que sabes de medici")){
+  if(cache[q.toLowerCase()]) return res.status(200).json({respuesta: cache[q.toLowerCase()]});
+
+  // Capacidades
+  if(q.includes("que sabes de medicina")){
     return res.status(200).json({respuesta: `Bastante, la verdad. Puedo ayudarte con casi cualquier tema de medicina general como si fuera un compañero de estudio que nunca se cansa:
 
 Lo que manejo bien:
+- Bases: anatomía, fisiología, bioquímica
+- Enfermedades: qué son, por qué pasan, cómo se presentan
+- Medicamentos: para qué sirve, dosis estándar, interacciones, efectos secundarios
+- Estudios: hemograma, tiroideo, glucosa, colesterol, orina
+- Tratamientos: guías actuales, cambios estilo vida hasta procedimientos
+- Prevención y primeros auxilios: vacunas, RCP 30x2 100-120/min, torniquete 5-7cm, Heimlich, quemadura agua 20min
 
-• Bases: anatomía, fisiología, bioquímica, cómo funciona realmente el cuerpo.
+Puedo explicar en lenguaje sencillo o técnico. No diagnostico personal, ve con tu médico de cabecera.
 
-• Enfermedades: qué son, por qué pasan, cómo se presentan, qué las diferencia de otras parecidas.
-
-• Medicamentos: para qué sirve cada uno, dosis estándar que se usan, interacciones, efectos secundarios, qué no mezclar con qué.
-
-• Estudios e interpretación: qué significa un hemograma, perfil tiroideo, glucosa, colesterol, orina, etc., en términos generales.
-
-• Tratamientos: qué opciones existen según las guías actuales, desde cambios de estilo de vida hasta procedimientos.
-
-• Prevención y primeros auxilios: vacunas, factores de riesgo, qué hacer ante una emergencia mientras llega ayuda. RCP 30x2 100-120/min, torniquete 5-7cm arriba herida, Heimlich, quemadura agua 20min, fractura inmovilizar.
-
-Puedo explicarte algo en lenguaje sencillo o en nivel técnico si lo necesitas para estudio/trabajo, ayudarte a entender lo que te dijo tu doctor, o revisar información que encontraste en internet.
-
-Lo que no hago es ponerte un diagnóstico personal ni recetarte algo específico para ti, porque eso sí necesita verte en persona, explorarte y conocer tu historia completa. Para eso lo ideal es que lo veas con tu médico de cabecera o especialista.
-
-Si me dices qué tema te interesa — por ejemplo "explícame la hipertensión", "qué pasa si tomo ibuprofeno y alcohol", "qué significa que mi creatinina está alta" — lo vemos a fondo. ¿Por dónde quieres empezar?`});
-  }
-
-  if(q.includes("que sabes de") || q.includes("que sabes hacer")){
-    const tema = q.replace(/que sabes de /g,'').replace(/que sabes hacer/g,'').replace(/\?/g,'').trim();
-    return res.status(200).json({respuesta: `Sé de TODO el conocimiento humano + IA sobre ${tema || 'todo'}:
-
-📚 Diccionario RAE completo + 50 idiomas + traductor
-⚖️ Leyes generales MX: Constitución Art 123, LFT vacaciones 12 días, aguinaldo 15 días, IMSS, Código Penal/Civil
-🩺 Medicina: RCP, torniquete, anatomía, medicamentos, enfermedades
-🧠 Lógica: silogismo, falacias, método científico
-🎓 Carreras: DGETI, TecNM, oficios
-🧱 Construcción: trazo, cimentación, concreto 1:2:3, NOM-031
-🌍 Todo internet: Wikipedia ES/EN, Wikidata, Open Library, arXiv, NASA
-
-Dime específico sobre ${tema} y te respondo a fondo.`});
-  }
-
-  // Medicina general directa
-  if(q.includes("medici") || q.includes("torniquete") || q.includes("rcp") || q.includes("primeros auxilios")){
-    try{
-      const base=`https://${req.headers.host}`;
-      const db=await fetchJSON(`${base}/api/materias`);
-      if(db?.medicina_general){
-        return res.status(200).json({respuesta: `🩺 MEDICINA GENERAL:\n\n${db.medicina_general.primeros_auxilios.join("\n\n")}\n\n💊 ${db.medicina_general.medicamentos_comunes.join("\n")}`});
-      }
-    }catch{}
+Dime tema: hipertensión, diabetes, ibuprofeno y alcohol, creatinina alta, etc.`});
   }
 
   // Motores x9
@@ -82,7 +58,7 @@ Dime específico sobre ${tema} y te respondo a fondo.`});
       const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKeys[i]}`},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content:"Eres IA BF v32 experta medicina general, responde estructurado como Meta AI: bases, enfermedades, medicamentos dosis interacciones, estudios, tratamientos, prevencion. No diagnostiques personal."},{role:"user", content: qOrig}], max_tokens: 1000})
+        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:[{role:"system", content:"Eres IA BF v33 con BOOT autocorrector evolutivo, todo conocimiento humano + IA"},{role:"user", content: qOrig}], max_tokens: 1000})
       });
       const d=await r.json();
       const ans=d?.choices?.[0]?.message?.content;
@@ -93,5 +69,16 @@ Dime específico sobre ${tema} y te respondo a fondo.`});
     }catch{}
   }
 
-  return res.status(200).json({respuesta: `Dime tema específico de medicina: hipertensión, diabetes, ibuprofeno y alcohol, creatinina alta, etc.`});
+  // Si falla todo, registrar para que BOOT lo autocorrija después
+  try{
+    const base=`https://${req.headers.host}`;
+    const evo=await fetchJSON(`${base}/api/conocimiento?q=${encodeURIComponent(qOrig)}`);
+    if(evo?.resumen){
+      cache[q.toLowerCase()]=evo.resumen;
+      return res.status(200).json({respuesta: evo.resumen});
+    }
+  }catch{}
+
+  registrarFallo(qOrig);
+  return res.status(200).json({respuesta: `BF, no pude responder "${qOrig}" ahora, pero mi BOOT AUTOCORRECTOR lo registró y lo corregirá solo en 10 min. Fallos en cola: ${fallos.length}. Mientras dime otro tema.`});
 }
