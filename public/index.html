@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IA BF UNIVERSAL v13.2</title>
-<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:16px;min-height:100vh}.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:28px;box-shadow:0 0 30px #00ff88;margin:20px 0 10px}h1{font-size:28px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.box{width:100%;max-width:720px;display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}input{flex:1;min-width:180px;padding:14px 16px;border-radius:14px;border:1px solid #222;background:#111;color:#fff;font-size:14px}button{padding:14px 16px;border-radius:14px;border:0;background:#00ff88;color:#000;font-weight:800;cursor:pointer}button.sec{background:#1a1a1a;color:#fff;border:1px solid #333}.card{width:100%;max-width:720px;background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px;line-height:1.6;white-space:pre-wrap;word-break:break-all}#reader{width:100%;max-width:720px;margin:10px 0;border-radius:14px;overflow:hidden}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}</style>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IA BF UNIVERSAL v14 FINAL</title>
+<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:16px;min-height:100vh}.logo{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00ff88,#00aaff);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:28px;box-shadow:0 0 30px #00ff88;margin:20px 0 10px}h1{font-size:28px;font-weight:900;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.box{width:100%;max-width:720px;display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}input{flex:1;min-width:180px;padding:14px 16px;border-radius:14px;border:1px solid #222;background:#111;color:#fff;font-size:14px}button{padding:14px 16px;border-radius:14px;border:0;background:#00ff88;color:#000;font-weight:800;cursor:pointer}button.sec{background:#1a1a1a;color:#fff;border:1px solid #333}.card{width:100%;max-width:720px;background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px;line-height:1.6;white-space:pre-wrap;word-break:break-all}#reader{width:100%;max-width:720px;margin:10px 0;border-radius:14px;overflow:hidden}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}</style>
 </head><body>
 <div class="logo">BF</div><h1>IA BF UNIVERSAL</h1>
 <div class="box">
@@ -22,12 +22,42 @@
 let html5QrCode;let ultima="";
 function limpiar(t){return t.replace(/\*\*/g,"").trim();}
 function plantillaResultado(texto){return `<div class="card">${texto}<div class="actions"><button class="sec" onclick="leer()">🔊 Escuchar</button><button class="sec" onclick="copiar()">📋 Copiar</button><button class="sec" onclick="compartir()">📤 Compartir</button></div></div>`;}
-function go(){const v=document.getElementById('p').value.trim();if(!v) return;if(/^[\d\s\+\-\*\/\(\)\.\,]+$/.test(v) && v.length<25 && v.length>0){try{if(/[\+\-\*\/]/.test(v)){const r=Function('"use strict";return ('+v+')')();if(r!==undefined &&!isNaN(r) && isFinite(r)){document.getElementById('result').innerHTML=plantillaResultado(`✅ ${v} = ${r}`);ultima=`${v} = ${r}`;return;}}}catch(e){}}const r=document.getElementById('result');r.innerHTML='<div class="card">Pensando con 9 cerebros...</div>';fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:v})}).then(x=>x.json()).then(d=>{ultima=d.respuesta||d.x2?.[0]?.respuesta||"Sin respuesta";r.innerHTML=plantillaResultado(ultima);}).catch(e=>{r.innerHTML=`<div class="card">Error: ${e.message}</div>`;});}
+function mathNatural(v){
+  let t=v.toLowerCase().replace(/,/g,'').trim();
+  // raiz cuadrada de 1322637
+  let m=t.match(/ra[ií]z cuadrada de\s*([\d\.]+)/);
+  if(m){const n=parseFloat(m[1]); const r=Math.sqrt(n); return `✅ Raíz cuadrada de ${n} = ${r} <br><br> ${r} * ${r} = ${n}`;}
+  m=t.match(/ra[ií]z cuadrada\s*([\d\.]+)/);
+  if(m){const n=parseFloat(m[1]); const r=Math.sqrt(n); return `✅ Raíz cuadrada de ${n} = ${r}`;}
+  // sqrt(123)
+  m=t.match(/sqrt\s*\(?\s*([\d\.]+)\s*\)?/);
+  if(m){const n=parseFloat(m[1]); return `✅ sqrt(${n}) = ${Math.sqrt(n)}`;}
+  // porcentaje: 20% de 500
+  m=t.match(/(\d+(\.\d+)?)\s*%\s*de\s*(\d+(\.\d+)?)/);
+  if(m){const p=parseFloat(m[1]), n=parseFloat(m[3]); return `✅ ${p}% de ${n} = ${(p/100)*n}`;}
+  // potencia: 2^10, 2 al cuadrado, 2 elevado a 10
+  m=t.match(/(\d+(\.\d+)?)\s*\^\s*(\d+(\.\d+)?)/);
+  if(m){return `✅ ${m[1]}^${m[3]} = ${Math.pow(parseFloat(m[1]),parseFloat(m[3]))}`;}
+  m=t.match(/(\d+(\.\d+)?)\s*(al cuadrado|al cubo)/);
+  if(m){const n=parseFloat(m[1]); const pot=m[3].includes('cuadrado')?2:3; return `✅ ${n} ${m[3]} = ${Math.pow(n,pot)}`;}
+  // matematica pura: 2+2*3 etc
+  if(/^[\d\s\+\-\*\/\(\)\.\,]+$/.test(t) && /[\+\-\*\/\^]/.test(t) && t.length<30){
+    try{const r=Function('"use strict";return ('+t.replace(/\^/g,'**')+')')(); if(!isNaN(r) && isFinite(r)) return `✅ ${v} = ${r}`;}catch(e){}
+  }
+  return null;
+}
+function go(){
+  const v=document.getElementById('p').value.trim(); if(!v) return;
+  const math=mathNatural(v);
+  if(math){document.getElementById('result').innerHTML=plantillaResultado(math); ultima=math.replace(/<[^>]+>/g,''); return;}
+  const r=document.getElementById('result'); r.innerHTML='<div class="card">Pensando con 9 cerebros...</div>';
+  fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:v})}).then(x=>x.json()).then(d=>{ultima=d.respuesta||d.x2?.[0]?.respuesta||"Sin respuesta"; r.innerHTML=plantillaResultado(ultima);}).catch(e=>{r.innerHTML=`<div class="card">Error: ${e.message}</div>`;});
+}
 function hablar(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Tu navegador no soporta voz");return;}const rec=new SR();rec.lang='es-MX';rec.onresult=e=>{document.getElementById('p').value=e.results[0][0].transcript;go();};rec.start();}
 function leer(){if(!ultima) return;const u=new SpeechSynthesisUtterance(limpiar(ultima));u.lang='es-MX';u.rate=0.95;speechSynthesis.cancel();speechSynthesis.speak(u);}
 function copiar(){if(!ultima) return; navigator.clipboard.writeText(ultima).then(()=>alert("✅ Copiado")).catch(()=>{const ta=document.createElement('textarea');ta.value=ultima;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert("✅ Copiado");});}
 async function compartir(){if(!ultima) return; if(navigator.share){try{await navigator.share({text:ultima});}catch(e){}} else{ copiar(); }}
-function scanQR(){const reader=document.getElementById('reader');html5QrCode=new Html5Qrcode("reader");html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:280,formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.AZTEC,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.CODE_93,Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.DATA_MATRIX,Html5QrcodeSupportedFormats.PDF_417]},(decoded)=>{document.getElementById('p').value=decoded;ultima=decoded;document.getElementById('result').innerHTML=plantillaResultado(`✅ CODIGO DETECTADO:<br><br>${decoded}`);},err=>{}).catch(err=>{document.getElementById('result').innerHTML=`<div class="card">Error camara: ${err}</div>`;});}
+function scanQR(){html5QrCode=new Html5Qrcode("reader");html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:280,formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.AZTEC,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.CODE_93,Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.DATA_MATRIX,Html5QrcodeSupportedFormats.PDF_417]},(decoded)=>{document.getElementById('p').value=decoded;ultima=decoded;document.getElementById('result').innerHTML=plantillaResultado(`✅ CODIGO DETECTADO:<br><br>${decoded}`);},err=>{}).catch(err=>{document.getElementById('result').innerHTML=`<div class="card">Error camara: ${err}</div>`;});}
 function stopQR(){if(html5QrCode){html5QrCode.stop().then(()=>{document.getElementById('reader').innerHTML="";}).catch(()=>{});}}
 document.getElementById('file').addEventListener('change', async e=>{const file=e.target.files[0];if(!file) return;const r=document.getElementById('result');r.innerHTML='<div class="card">🔍 Leyendo QR, Barcode y Texto...</div>';try{html5QrCode=new Html5Qrcode("reader");const decoded=await html5QrCode.scanFile(file,true);document.getElementById('p').value=decoded;ultima=decoded;r.innerHTML=plantillaResultado(`✅ CODIGO DETECTADO:<br><br>${decoded}`);return;}catch(e){}try{const {data:{text}}=await Tesseract.recognize(file,'spa+eng');document.getElementById('p').value=text.slice(0,300);ultima=text;r.innerHTML=plantillaResultado(`📄 TEXTO EN FOTO (OCR):<br><br>${text.slice(0,800)}`);}catch(err){r.innerHTML=`<div class="card">Error: ${err.message}</div>`;}});
 </script>
