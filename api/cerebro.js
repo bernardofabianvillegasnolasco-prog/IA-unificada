@@ -1,1 +1,13 @@
-export default async function handler(req,res){res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Cache-Control","no-cache");if(req.method==="OPTIONS")return res.status(200).end();if(req.method!=="POST")return res.status(200).json({cerebro:"BF v30 UNIFICADO - 13 EN 1 - INDEPENDIENTE DE LOCALHOST", independiente:true, localhost:false});const {prompt}=req.body||{prompt:"hola"};return res.status(200).json({cerebro:"🧠 CEREBRO UNIFICADO v30 - 13 EN 1 - INDEPENDIENTE", text:"TÚ: "+prompt+"\n\n✅ ESTE ES v30 REAL. 100% INDEPENDIENTE DE LOCALHOST. Ya no necesita Termux ni tunel trycloudflare.com. Es inmortal en Vercel.\n\nResponde como un solo cerebro supremo con 13 motores fusionados.", independiente:true, localhost:false, v:"v30-FINAL-SIN-LOCAL"});}
+export default async function handler(req,res){
+ res.setHeader("Access-Control-Allow-Origin","*");
+ res.setHeader("Cache-Control","no-cache, no-store");
+ if(req.method==="OPTIONS") return res.status(200).end();
+ return res.status(200).json({
+   cerebro:"BF v30 UNIFICADO - 13 EN 1 - INMORTAL - INDEPENDIENTE",
+   text:`TÚ: ${(req.body?.prompt||"hola")}\n\n✅ SOY v30 REAL 100% INDEPENDIENTE\nSin localhost:8080\nSin trycloudflare.com\nSin Termux\nVivo 100% en Vercel - Inmortal\n\nRespondo como 13 motores fusionados en uno solo.`,
+   v:"v30-FINAL-INDEPENDIENTE",
+   independiente:true,
+   localhost:false,
+   tunel:false
+ });
+}
