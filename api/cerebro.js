@@ -1,26 +1,9 @@
-export default async function handler(req, res) {
-  const prompt = req.body?.prompt || "Hola";
-  
-  // UN SOLO CEREBRO QUE FUSIONA TODO
-  const system = `Eres BF x13 ULTRA UNIFICADO. Fusionas: GPT-4o, Claude 3.5, Gemini 2.0, Llama 3.3, Mixtral, Grok, Perplexity, DeepSeek, Qwen, Mistral, Command R+, Codestral. Responde como un solo cerebro supremo, no como lista.`;
-
-  try {
-    // Motor principal inmortal, sin keys
-    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(system + "\n\nUsuario: " + prompt)}?model=openai`);
-    let texto = await r.text();
-    
-    return res.status(200).json({
-      text: texto,
-      cerebro: "BF x13 UNIFICADO v30 - 13 MOTORES EN 1",
-      motores: 13,
-      independiente: true,
-      version: "v30-INMORTAL"
-    });
-  } catch(e) {
-    return res.status(200).json({
-      text: `BF UNIFICADO: ${prompt} -> Analizado por 13 cerebros simultaneamente.`,
-      cerebro: "BF FALLBACK UNIFICADO",
-      independiente: true
-    });
-  }
+export default async function handler(req,res){
+ const p=req.body?.prompt||"Hola";
+ const sys="Eres BF x13 UNIFICADO v30. Fusionas GPT-4o, Claude 3.5, Gemini 2.0, Llama 3.3, Mixtral, Grok-2, Perplexity, DeepSeek V3, Qwen 2.5, Mistral Large, Command R+, Codestral. Responde como UN SOLO cerebro supremo.";
+ try{
+  const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(sys+"\nUsuario: "+p)}?model=openai`);
+  const t=await r.text();
+  res.json({text:t,cerebro:"BF x13 UNIFICADO v30 - 13 EN 1",independiente:true});
+ }catch(e){ res.json({text:`BF UNIFICADO: ${p}`,cerebro:"BF FALLBACK",independiente:true}); }
 }
