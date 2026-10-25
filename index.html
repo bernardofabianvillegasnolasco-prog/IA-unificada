@@ -6,7 +6,7 @@
 <title>IA BF v4.0.39</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Black+Ops+One&display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;padding-top:46px;overflow-x:hidden}
+body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;padding-top:46px;padding-bottom:30px;overflow-x:hidden}
 #reloj{position:fixed;top:8px;right:12px;z-index:9999;font-family:'Orbitron',monospace;text-align:right;background:rgba(0,0,0,0.8);border:1px solid #333;border-radius:8px;padding:5px 10px}
 #fecha{font-size:10px;color:#fff}
 #hora{font-size:13px;color:#fff;font-weight:900;letter-spacing:2px;margin-top:2px}
@@ -14,39 +14,10 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
 #panelAjustes{position:fixed;top:48px;left:12px;z-index:10000;background:#111;border:1px solid #333;border-radius:14px;padding:12px;width:200px;display:none}
 #panelAjustes.show{display:block}
 .opcion{width:100%;background:#0a0a0a;color:#fff;border:1px solid #333;border-radius:10px;padding:10px;margin:6px 0;font-size:12px;cursor:pointer}
-
-/* SOLO IA BF SE MUEVE Y CAMBIA DE COLOR */
-.DI{
- text-align:center;
- margin:12px 0 4px 0;
- line-height:1;
-}
-.DI span{
- font-family:'Black Ops One', sans-serif;
- font-size:64px;
- font-weight:400;
- letter-spacing:18px;
- color:#fff;
- display:inline-block;
- transform: translateZ(0);
- will-change: transform;
- animation: moverIABF 2.2s ease-in-out infinite, coloresIABF 6s linear infinite;
-}
-@keyframes moverIABF{
- 0%,100%{transform: translateZ(0) scale(1)}
- 15%{transform: translateZ(0) scale(1.08)}
- 30%{transform: translateZ(0) scale(1)}
- 45%{transform: translateZ(0) scale(1.08)}
- 70%{transform: translateZ(0) scale(1)}
-}
-@keyframes coloresIABF{
- 0%{color:#fff; text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
- 25%{color:#ccffdd; text-shadow:0 0 10px #00ff88,0 0 20px #00ff88,0 0 40px #00ff88}
- 50%{color:#cceeff; text-shadow:0 0 10px #00aaff,0 0 20px #00aaff,0 0 40px #00aaff}
- 75%{color:#ffeecc; text-shadow:0 0 10px #ffaa00,0 0 20px #ffaa00,0 0 40px #ffaa00}
- 100%{color:#fff; text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
-}
-
+.DI{text-align:center;margin:12px 0 4px 0;line-height:1}
+.DI span{font-family:'Black Ops One',sans-serif;font-size:64px;font-weight:400;letter-spacing:18px;color:#fff;display:inline-block;transform:translateZ(0);will-change:transform;animation:moverIABF 2.2s ease-in-out infinite, coloresIABF 6s linear infinite}
+@keyframes moverIABF{0%,100%{transform:translateZ(0) scale(1)}15%{transform:translateZ(0) scale(1.08)}30%{transform:translateZ(0) scale(1)}45%{transform:translateZ(0) scale(1.08)}70%{transform:translateZ(0) scale(1)}}
+@keyframes coloresIABF{0%{color:#fff;text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}25%{color:#ccffdd;text-shadow:0 0 10px #00ff88,0 0 20px #00ff88,0 0 40px #00ff88}50%{color:#cceeff;text-shadow:0 0 10px #00aaff,0 0 20px #00aaff,0 0 40px #00aaff}75%{color:#ffeecc;text-shadow:0 0 10px #ffaa00,0 0 20px #ffaa00,0 0 40px #ffaa00}100%{color:#fff;text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}}
 .sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px;letter-spacing:2px;opacity:0.7}
 .box{border:1px solid #222;border-radius:16px;padding:10px;margin:8px 0;background:#0a0a0a}
 .btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.4);cursor:pointer}
@@ -56,6 +27,8 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
 .user{background:linear-gradient(135deg,#00ff88,#00cc66);color:#000}
 .ai{background:#111;color:#00ff88;border-left:3px solid #ff0033}
 textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-radius:10px;padding:10px}
+/* VERSION CHIQUITA ABAJO DERECHA */
+#version{position:fixed;bottom:6px;right:10px;z-index:9999;font-family:'Orbitron',monospace;font-size:8px;color:rgba(255,255,255,0.35);letter-spacing:1px;pointer-events:none;user-select:none}
 </style>
 </head>
 <body>
@@ -64,10 +37,11 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div id="reloj"><div id="fecha">25/10/2026</div><div id="hora">00:00:00</div></div>
 
 <div class="DI"><span>IA BF</span></div>
-
 <div class="sub">IA BF v4.0.39 • Creado por BF Villegas</div>
 <div id="chat"></div>
 <div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
+
+<div id="version">v4.0.39</div>
 
 <script>
 function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
@@ -98,7 +72,7 @@ async function responder(){
 }
 btnEl.onclick=()=>{speechSynthesis.resume();responder();};
 promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();speechSynthesis.resume();responder();}});
-optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(vozActiva)hablar('Voz activada, soy IA BF');else speechSynthesis.cancel();};
+optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(vozActiva)hablar('Voz activada');else speechSynthesis.cancel();};
 document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Hola, soy IA BF v4 punto 0 punto 39');};
 document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v4_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
 let rec=null;btnMic.onclick=()=>{speechSynthesis.resume();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
