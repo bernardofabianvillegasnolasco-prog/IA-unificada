@@ -53,10 +53,7 @@ actualizarVozUI();
 function limpiarParaVoz(texto){
   return texto
     .replace(/\r/g,'')
-    // Salto de linea = PAUSA LARGA
-    .replace(/\n\n+/g,' ... ')
-    .replace(/\n/g,' ... ')
-    // Solo quitamos * y # para no decir asterisco/gato
+    .replace(/\n+/g,', ')
     .replace(/\*\*/g,' ')
     .replace(/\*/g,' ')
     .replace(/#/g,' ')
@@ -66,7 +63,7 @@ function limpiarParaVoz(texto){
     .trim();
 }
 function renderActual(u,a){chatEl.innerHTML='';if(u){const d=document.createElement('div');d.className='msg user';d.textContent=u;chatEl.appendChild(d);}if(a){const d=document.createElement('div');d.className='msg ai';d.textContent=a;chatEl.appendChild(d);}}
-function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const limpio=limpiarParaVoz(t);if(!limpio)return;const u=new SpeechSynthesisUtterance(limpio);u.lang='es-MX';u.rate=0.92;u.pitch=1;speechSynthesis.speak(u);}
+function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const limpio=limpiarParaVoz(t);if(!limpio)return;const u=new SpeechSynthesisUtterance(limpio);u.lang='es-MX';u.rate=0.95;speechSynthesis.speak(u);}
 async function responder(){
  const p=promptEl.value.trim();if(!p)return;
  chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
