@@ -3,112 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IA BF UNIVERSAL v31 - Creado por BF Villegas</title>
+<title>IA BF v31 - Creado por BF Villegas</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-body{background:#000;color:#00ff88;font-family:monospace;padding:12px}
-.DI{text-align:center;font-size:48px;font-weight:900;text-shadow:0 0 20px #00ff88}
-.sub{color:#00ff88;text-align:center;font-size:12px;margin-bottom:12px}
-.box{border:1px solid #00ff88;border-radius:12px;padding:10px;margin:8px 0}
-.btn{background:#00ff88;color:#000;border:none;border-radius:12px;padding:12px 16px;width:100%;font-weight:900;margin:4px 0}
-.small{font-size:10px;opacity:0.5;text-align:center}
-.motor{display:inline-block;border:1px solid #00ff88;border-radius:8px;padding:2px 8px;margin:2px;font-size:10px}
-#chat{max-height:60vh;overflow-y:auto}
-.user{color:#00ccff;border:1px solid #00ccff;border-radius:10px;padding:8px;margin:6px 0}
-.ai{color:#00ff88;border:1px solid #00ff88;border-radius:10px;padding:8px;margin:6px 0;white-space:pre-wrap}
-textarea{width:100%;background:#111;color:#00ff88;border:1px solid #00ff88;border-radius:10px;padding:10px}
+:root{--rojo:#ff0033;--verde:#00ff88;--negro:#050505}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#1a0000 0%,#000 60%);color:#e0e0e0;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:0 0 40px}
+.header{text-align:center;padding:24px 16px 8px;border-bottom:1px solid #222;background:linear-gradient(180deg,rgba(255,0,51,0.15),transparent)}
+.logo{font-family:'Orbitron',sans-serif;font-size:56px;font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#fff,#ff0033);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px #ff0033);margin:0}
+.sub{font-size:10px;opacity:0.7;letter-spacing:2px;margin-top:6px;color:#00ff88}
+.badge{display:inline-block;border:1px solid var(--rojo);border-radius:20px;padding:4px 10px;font-size:9px;margin:3px;color:#ff8a9b;background:rgba(255,0,51,0.08)}
+#chat{max-width:700px;margin:12px auto;padding:0 16px;height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.msg{border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.5;max-width:85%;animation:pop .3s}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.user{align-self:flex-end;background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;font-weight:600}
+.ai{align-self:flex-start;background:#111;border:1px solid #222;border-left:3px solid var(--rojo)}
+.panel{max-width:700px;margin:0 auto;padding:12px 16px;background:rgba(20,20,20,0.8);backdrop-filter:blur(12px);border:1px solid #222;border-radius:20px}
+textarea{width:100%;background:#0a0a0a;color:#fff;border:1px solid #333;border-radius:12px;padding:12px;font-family:inherit;resize:none;outline:none}
+textarea:focus{border-color:var(--rojo);box-shadow:0 0 0 2px rgba(255,0,51,0.2)}
+.btn{width:100%;border:none;border-radius:12px;padding:14px;font-weight:900;letter-spacing:1px;margin:6px 0;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.2s}
+.btn-main{background:linear-gradient(90deg,var(--rojo),#990011);color:#fff;box-shadow:0 4px 20px rgba(255,0,51,0.4)}
+.btn-mic{background:linear-gradient(90deg,#00ff88,#00cc88);color:#000}
+.btn-ghost{background:#111;color:#888;border:1px solid #333}
+.btn:hover{transform:translateY(-1px)}
+.row{display:flex;gap:8px}
+.small{font-size:9px;opacity:0.4;text-align:center;margin-top:16px;letter-spacing:1px}
 </style>
 </head>
 <body>
-<div class="DI">IA BF</div>
-<div class="sub">IA BF UNIVERSAL v31<br>CEREBRO UNICO - 13 MOTORES FUSIONADOS + MEMORIA INFINITA<br>Creado por BF Villegas</div>
-
-<div class="box">
-🧠 100% INDEPENDIENTE - CON MEMORIA - SIN TUNEL - SIN TERMUX<br>
-<span class="motor">GPT-4o</span> <span class="motor">Claude 3.5</span> <span class="motor">Gemini 2.0</span> <span class="motor">Llama 4</span> <span class="motor">Mixtral</span> <span class="motor">Grok-2</span> <span class="motor">Perplexity</span> <span class="motor">DeepSeek</span> <span class="motor">Qwen</span> <span class="motor">Mistral</span> <span class="motor">Command R+</span> <span class="motor">Codestral</span> <span class="motor">INMORTAL CLOUD</span>
+<div class="header">
+<h1 class="logo">IA BF</h1>
+<div class="sub">IA BF UNIVERSAL v31 • CEREBRO UNICO • 13 MOTORES + MEMORIA INFINITA<br>Creado por BF Villegas</div>
+<div style="margin-top:10px">
+<span class="badge">GPT-4o</span><span class="badge">Claude 3.5</span><span class="badge">Gemini 2.0</span><span class="badge">Llama 4</span><span class="badge">Grok-2</span><span class="badge">INMORTAL CLOUD</span>
+</div>
 </div>
 
 <div id="chat"></div>
 
-<div class="box">
-<textarea id="prompt" rows="3" placeholder="Escribe aquí... Ej: Que es la vida? Recuerdas lo que te dije? Hazme un poema..."></textarea>
-<button class="btn" id="btnMic">🎤 HABLAR</button>
-<button class="btn" id="btnResponder">▶ RESPONDER - CEREBRO UNIFICADO x13 + MEMORIA + VOZ</button>
-<button class="btn" id="btnVoz" style="background:#111;color:#00ff88;border:1px solid #00ff88">🔊 VOZ: ACTIVADA</button>
-<div style="display:flex;gap:6px">
-<button class="btn" id="btnBorrar" style="background:#111;color:#00ff88;border:1px solid #00ff88">🗑 Borrar Historial</button>
-<button class="btn" id="btnCopiar" style="background:#111;color:#00ff88;border:1px solid #00ff88">📋 Copiar Chat</button>
+<div class="panel">
+<textarea id="prompt" rows="2" placeholder="Habla con IA BF... ¿Qué es la vida? ¿Recuerdas lo que te dije?"></textarea>
+<button class="btn btn-mic" id="btnMic">🎤 HABLAR</button>
+<button class="btn btn-main" id="btnResponder">▶ RESPONDER • CEREBRO UNIFICADO x13 + VOZ</button>
+<div class="row">
+<button class="btn btn-ghost" id="btnVoz">🔊 VOZ ON</button>
+<button class="btn btn-ghost" id="btnBorrar">🗑 BORRAR</button>
+<button class="btn btn-ghost" id="btnCopiar">📋 COPIAR</button>
 </div>
 </div>
 
 <div class="small">Historial guardado local • Creado por BF Villegas • ia-unificada-bf.vercel.app • v31 DIOS</div>
 
 <script>
-let historial = JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
-let vozActiva = true;
-const chatEl=document.getElementById('chat');
-const promptEl=document.getElementById('prompt');
-const btnEl=document.getElementById('btnResponder');
-const btnMic=document.getElementById('btnMic');
-const btnVoz=document.getElementById('btnVoz');
-
-function render(){
- chatEl.innerHTML='';
- historial.slice(-20).forEach(m=>{
-  const d=document.createElement('div');
-  d.className=m.role==='user'?'user':'ai';
-  d.textContent=(m.role==='user'?'TÚ: ':'BF x13 - '+ (m.model||'Groq')+': ')+m.content;
-  chatEl.appendChild(d);
- });
- chatEl.scrollTop=chatEl.scrollHeight;
-}
-function hablar(texto){
- if(!vozActiva) return;
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(texto);
- u.lang='es-MX'; u.rate=1; u.pitch=1;
- const voces=speechSynthesis.getVoices();
- const es=voces.find(v=>v.lang.includes('es'));
- if(es) u.voice=es;
- speechSynthesis.speak(u);
-}
-async function responder(){
- const prompt=promptEl.value.trim();
- if(!prompt) return;
- btnEl.disabled=true; btnEl.textContent='🧠 v31 pensando (13 motores + memoria)...';
- historial.push({role:'user',content:prompt});
- localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
- render(); promptEl.value='';
- try{
-  const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,historial: historial.slice(-10)})});
-  const j=await r.json();
-  historial.push({role:'assistant',content:j.text,model:j.cerebro});
-  hablar(j.text);
- }catch(e){
-  historial.push({role:'assistant',content:'Error de conexion: '+e.message,model:'ERROR'});
- }
- localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
- render();
- btnEl.disabled=false; btnEl.textContent='▶ RESPONDER - CEREBRO UNIFICADO x13 + MEMORIA + VOZ';
-}
-btnEl.onclick=responder;
-promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();responder();}});
+let historial=JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
+let vozActiva=true;
+const chatEl=document.getElementById('chat'),promptEl=document.getElementById('prompt');
+const btnEl=document.getElementById('btnResponder'),btnMic=document.getElementById('btnMic'),btnVoz=document.getElementById('btnVoz');
+function render(){chatEl.innerHTML='';historial.slice(-20).forEach(m=>{const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'ai');d.textContent=m.content;chatEl.appendChild(d);});chatEl.scrollTop=chatEl.scrollHeight;}
+function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-MX';const v=speechSynthesis.getVoices().find(v=>v.lang.includes('es'));if(v)u.voice=v;speechSynthesis.speak(u);}
+async function responder(){const p=promptEl.value.trim();if(!p)return;btnEl.disabled=true;btnEl.textContent='🧠 v31 PENSANDO...';historial.push({role:'user',content:p});localStorage.setItem('bf_v31_hist',JSON.stringify(historial));render();promptEl.value='';try{const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,historial:historial.slice(-10)})});const j=await r.json();historial.push({role:'assistant',content:j.text});hablar(j.text);}catch(e){historial.push({role:'assistant',content:'Error: '+e.message});}localStorage.setItem('bf_v31_hist',JSON.stringify(historial));render();btnEl.disabled=false;btnEl.textContent='▶ RESPONDER • CEREBRO UNIFICADO x13 + VOZ';}
+btnEl.onclick=responder;promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();responder();}});
 document.getElementById('btnBorrar').onclick=()=>{historial=[];localStorage.removeItem('bf_v31_hist');render();};
 document.getElementById('btnCopiar').onclick=()=>{navigator.clipboard.writeText(historial.map(m=>m.role+': '+m.content).join('\n\n'))};
-btnVoz.onclick=()=>{vozActiva=!vozActiva;btnVoz.textContent=vozActiva?'🔊 VOZ: ACTIVADA':'🔇 VOZ: DESACTIVADA'; if(!vozActiva) speechSynthesis.cancel();};
-
-// Microfono
-let rec=null;
-btnMic.onclick=()=>{
- if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){alert('Tu navegador no soporta microfono. Usa Chrome.');return;}
- const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(rec && rec._on){rec.stop();return;}
- rec=new SR(); rec.lang='es-MX'; rec.interimResults=false;
- rec._on=true;
- rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO... TOCA PARA PARAR'; btnMic.style.background='#ff0055'};
- rec.onend=()=>{btnMic.textContent='🎤 HABLAR'; btnMic.style.background='#00ff88'; rec._on=false;};
- rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript; responder();};
- rec.start();
-};
+btnVoz.onclick=()=>{vozActiva=!vozActiva;btnVoz.textContent=vozActiva?'🔊 VOZ ON':'🔇 VOZ OFF';if(!vozActiva)speechSynthesis.cancel();};
+let rec=null;btnMic.onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
 render();
 </script>
 </body>
