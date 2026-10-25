@@ -8,8 +8,8 @@
 <style>
 body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;padding-top:46px}
 #reloj{position:fixed;top:8px;right:12px;z-index:9999;font-family:'Orbitron',monospace;text-align:right;background:rgba(0,0,0,0.7);border:1px solid #fff;border-radius:8px;padding:5px 10px}
-#fecha{font-size:10px;color:#fff;text-shadow:0 0 6px #fff}
-#hora{font-size:13px;color:#fff;text-shadow:0 0 8px #fff;font-weight:900;letter-spacing:2px;margin-top:2px}
+#fecha{font-size:10px;color:#fff}
+#hora{font-size:13px;color:#fff;font-weight:900;letter-spacing:2px;margin-top:2px}
 #btnAjustes{position:fixed;top:8px;left:12px;z-index:9999;background:rgba(20,20,20,0.9);border:1px solid #fff;color:#fff;border-radius:8px;padding:6px 10px;font-size:16px;cursor:pointer}
 #panelAjustes{position:fixed;top:48px;left:12px;z-index:10000;background:#111;border:1px solid #333;border-radius:14px;padding:12px;width:200px;display:none}
 #panelAjustes.show{display:block}
@@ -17,7 +17,7 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
 .DI{text-align:center;font-size:52px;font-weight:900;letter-spacing:6px;color:#fff;text-shadow:0 0 30px #ff0033}
 .sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px}
 .box{border:1px solid #222;border-radius:16px;padding:10px;margin:8px 0;background:#0a0a0a}
-.btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.5),inset 0 2px 0 rgba(255,255,255,0.3);cursor:pointer}
+.btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007;cursor:pointer}
 .btn{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:12px;font-weight:900;margin:4px 0}
 .small{font-size:9px;opacity:.5;text-align:center;margin-top:16px}
 #chat{max-height:50vh;overflow-y:auto}
@@ -29,41 +29,56 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 </head>
 <body>
 <button id="btnAjustes">⚙️</button>
-<div id="panelAjustes"><div style="font-size:10px;color:#888;margin-bottom:8px">AJUSTES IA BF</div><button class="opcion" id="optVoz">🔊 Voz: ON</button><button class="opcion" id="optBorrar">🗑️ Borrar memoria</button><button class="opcion" id="optCerrar">✖️ Cerrar</button></div>
+<div id="panelAjustes"><div style="font-size:10px;color:#888;margin-bottom:8px">AJUSTES IA BF</div><button class="opcion" id="optVoz">🔊 Voz: ON</button><button class="opcion" id="optTest">🔈 Probar voz</button><button class="opcion" id="optBorrar">🗑️ Borrar memoria</button><button class="opcion" id="optCerrar">✖️ Cerrar</button></div>
 <div id="reloj"><div id="fecha">25/10/2026</div><div id="hora">00:00:00</div></div>
 <div class="DI">IA BF</div>
 <div class="sub">IA BF UNIVERSAL v31 • Creado por BF Villegas</div>
 <div id="chat"></div>
 <div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
-<div class="small">Creado por BF Villegas • v31 DIOS</div>
+<div class="small">Creado por BF Villegas • Voz activa • v31 DIOS</div>
 <script>
-function actualizarReloj(){const a=new Date();const d=String(a.getDate()).padStart(2,'0');const m=String(a.getMonth()+1).padStart(2,'0');const an=a.getFullYear();const h=String(a.getHours()).padStart(2,'0');const mm=String(a.getMinutes()).padStart(2,'0');const s=String(a.getSeconds()).padStart(2,'0');document.getElementById('fecha').textContent=`${d}/${m}/${an}`;document.getElementById('hora').textContent=`${h}:${mm}:${s}`;}
+function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
 setInterval(actualizarReloj,1000);actualizarReloj();
 const btnAjustes=document.getElementById('btnAjustes'),panel=document.getElementById('panelAjustes');
 btnAjustes.onclick=()=>panel.classList.toggle('show');
 document.getElementById('optCerrar').onclick=()=>panel.classList.remove('show');
-document.addEventListener('click',e=>{if(!panel.contains(e.target)&&e.target!==btnAjustes)panel.classList.remove('show');});
+
 let historial=JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
-let vozActiva=localStorage.getItem('bf_voz')!=='off';
+// VOZ FORZADA ON
+localStorage.setItem('bf_voz','on');
+let vozActiva=true;
+let voces=[];
+
+function cargarVoces(){voces=speechSynthesis.getVoices();}
+speechSynthesis.onvoiceschanged=cargarVoces;
+cargarVoces();
+setTimeout(cargarVoces,500);
+
+function limpiarParaVoz(texto){
+  return texto.replace(/\r/g,'').replace(/\n+/g,', ').replace(/\*\*/g,' ').replace(/\*/g,' ').replace(/#/g,' ').replace(/`/g,' ').replace(/_/g,'').replace(/\s+/g,' ').trim();
+}
+
+function hablar(t){
+  speechSynthesis.cancel();
+  speechSynthesis.resume();
+  const limpio=limpiarParaVoz(t).slice(0,500);
+  if(!limpio)return;
+  const u=new SpeechSynthesisUtterance(limpio);
+  const v=voces.find(x=>x.lang.includes('es-MX'))||voces.find(x=>x.lang.includes('es'))||voces[0];
+  if(v)u.voice=v;
+  u.lang='es-MX';
+  u.volume=1;
+  u.rate=1;
+  u.pitch=1;
+  speechSynthesis.speak(u);
+}
+
 const chatEl=document.getElementById('chat'),promptEl=document.getElementById('prompt');
 const btnEl=document.getElementById('btnResponder'),btnMic=document.getElementById('btnMic');
-const optVoz=document.getElementById('optVoz'),optBorrar=document.getElementById('optBorrar');
+const optVoz=document.getElementById('optVoz');
 function actualizarVozUI(){optVoz.textContent=vozActiva?'🔊 Voz: ON':'🔇 Voz: OFF';}
 actualizarVozUI();
-function limpiarParaVoz(texto){
-  return texto
-    .replace(/\r/g,'')
-    .replace(/\n+/g,', ')
-    .replace(/\*\*/g,' ')
-    .replace(/\*/g,' ')
-    .replace(/#/g,' ')
-    .replace(/`/g,' ')
-    .replace(/_/g,'')
-    .replace(/\s+/g,' ')
-    .trim();
-}
 function renderActual(u,a){chatEl.innerHTML='';if(u){const d=document.createElement('div');d.className='msg user';d.textContent=u;chatEl.appendChild(d);}if(a){const d=document.createElement('div');d.className='msg ai';d.textContent=a;chatEl.appendChild(d);}}
-function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const limpio=limpiarParaVoz(t);if(!limpio)return;const u=new SpeechSynthesisUtterance(limpio);u.lang='es-MX';u.rate=0.95;speechSynthesis.speak(u);}
 async function responder(){
  const p=promptEl.value.trim();if(!p)return;
  chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
@@ -73,15 +88,22 @@ async function responder(){
  try{
   const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,historial:historial.slice(-100)})});
   const j=await r.json();historial.push({role:'assistant',content:j.text});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
-  renderActual(p,j.text);hablar(j.text);
+  renderActual(p,j.text);
+  hablar(j.text);
  }catch(e){renderActual(p,'Error:'+e.message);}
  btnEl.textContent='RESPONDER';
 }
-btnEl.onclick=responder;
-promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();responder();}});
-optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(!vozActiva)speechSynthesis.cancel();};
-optBorrar.onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v31_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
-let rec=null;btnMic.onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
+btnEl.onclick=()=>{speechSynthesis.resume();responder();};
+promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();speechSynthesis.resume();responder();}});
+optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(vozActiva)hablar('Voz activada, soy IA BF');else speechSynthesis.cancel();};
+document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Hola, soy IA BF, creado por BF Villegas, voz activada');};
+document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v31_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
+
+let rec=null;btnMic.onclick=()=>{speechSynthesis.resume();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
+
+// Desbloqueo audio movil obligatorio
+document.body.addEventListener('click',()=>{speechSynthesis.resume();cargarVoces();},{once:true});
+document.body.addEventListener('touchstart',()=>{speechSynthesis.resume();},{once:true});
 </script>
 </body>
 </html>
