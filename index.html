@@ -52,19 +52,17 @@ const optVoz=document.getElementById('optVoz'),optBorrar=document.getElementById
 function actualizarVozUI(){optVoz.textContent=vozActiva?'🔊 Voz: ON':'🔇 Voz: OFF';}
 actualizarVozUI();
 
-// --- FILTRO DE VOZ: omitir *, , . # ---
 function limpiarParaVoz(texto){
   return texto
-    .replace(/\*\*/g, ' ') // ** negrita
-    .replace(/\*/g, ' ')   // asterisco
-    .replace(/#/g, ' ')    // gato
+    .replace(/\r/g, '')
+    // Cambio de renglón = coma (pausa)
+    .replace(/\n+/g, ', ')
+    // Quitamos solo los que hacen decir "asterisco" y "gato"
+    .replace(/\*\*/g, ' ')
+    .replace(/\*/g, ' ')
+    .replace(/#/g, ' ')
     .replace(/`/g, ' ')
-    .replace(/_/g, ' ')
-    // Quitamos coma, punto solo para que no los diga como palabra, pero dejamos espacio para pausa natural
-    .replace(/,/g, ' ')
-    .replace(/\./g, ' ')
-    .replace(/:/g, ' ')
-    .replace(/;/g, ' ')
+    .replace(/_/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
