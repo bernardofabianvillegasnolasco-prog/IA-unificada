@@ -7,49 +7,98 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;padding-top:36px}
-#reloj{position:fixed;top:8px;right:12px;z-index:9999;font-family:'Orbitron',monospace;font-size:11px;color:#00ffff;text-shadow:0 0 8px #00ffff,0 0 16px #00eaff;background:rgba(0,20,30,0.7);border:1px solid #00ffff;border-radius:8px;padding:5px 10px;letter-spacing:1.5px;box-shadow:0 0 12px rgba(0,255,255,0.4)}
-.DI{text-align:center;font-size:52px;font-weight:900;letter-spacing:6px;color:#fff;text-shadow:0 0 30px #ff0033;margin-top:8px}
-.sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px;letter-spacing:1px}
+#reloj{position:fixed;top:8px;right:12px;z-index:9999;font-family:'Orbitron',monospace;font-size:11px;color:#00ffff;text-shadow:0 0 8px #00ffff;background:rgba(0,20,30,0.7);border:1px solid #00ffff;border-radius:8px;padding:5px 10px;box-shadow:0 0 12px rgba(0,255,255,0.4)}
+.DI{text-align:center;font-size:52px;font-weight:900;letter-spacing:6px;color:#fff;text-shadow:0 0 30px #ff0033}
+.sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px}
 .box{border:1px solid #222;border-radius:16px;padding:10px;margin:8px 0;background:#0a0a0a}
-.btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;text-shadow:0 1px 2px rgba(0,0,0,0.8),0 0 8px rgba(255,255,255,0.5);box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.5),inset 0 2px 0 rgba(255,255,255,0.3);transform:translateY(0);transition:all .12s;cursor:pointer}
-.btn-3d-responder:active{transform:translateY(6px);box-shadow:0 2px 0 #550007,0 4px 10px rgba(255,0,51,0.5)}
+.btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.5),inset 0 2px 0 rgba(255,255,255,0.3);cursor:pointer;transition:.12s}
+.btn-3d-responder:active{transform:translateY(6px);box-shadow:0 2px 0 #550007}
 .btn{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:12px;font-weight:900;margin:4px 0}
 .small{font-size:9px;opacity:.5;text-align:center;margin-top:16px}
-#chat{max-height:48vh;overflow-y:auto}
-.msg{margin:6px 0;padding:8px;border-radius:10px;border:1px solid #333}
+#chat{max-height:50vh;overflow-y:auto}
+.msg{margin:8px 0;padding:12px;border-radius:14px;border:1px solid #333;white-space:pre-wrap;font-size:13px}
 .user{background:linear-gradient(135deg,#00ff88,#00cc66);color:#000}
-.ai{background:#111;color:#00ff88}
+.ai{background:#111;color:#00ff88;border-left:3px solid #ff0033}
+.memoria{font-size:9px;color:#00ffff;text-align:center;margin:6px 0;opacity:0.6}
 textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-radius:10px;padding:10px}
 </style>
 </head>
 <body>
 <div id="reloj">00/00/0000 00:00:00</div>
 <div class="DI">IA BF</div>
-<div class="sub">IA BF UNIVERSAL v31 • 13 MOTORES + MEMORIA • Creado por BF Villegas</div>
+<div class="sub">IA BF UNIVERSAL v31 • MEMORIA FANTASMA 100 • Creado por BF Villegas</div>
+<div class="memoria" id="memoriaInfo">🧠 Memoria: 0/100 mensajes recordados • Pantalla limpia por pregunta</div>
 <div id="chat"></div>
 <div class="box">
-<textarea id="prompt" rows="2" placeholder="Habla con IA BF..."></textarea>
+<textarea id="prompt" rows="2" placeholder="Pregunta... la pantalla se limpiará pero recordaré 100 mensajes"></textarea>
 <button class="btn" id="btnMic">🎤 HABLAR</button>
 <button class="btn-3d-responder" id="btnResponder">RESPONDER</button>
-<div style="display:flex;gap:6px"><button class="btn" id="btnVoz">🔊 VOZ ON</button><button class="btn" id="btnBorrar">🗑 BORRAR</button></div>
+<div style="display:flex;gap:6px"><button class="btn" id="btnVoz">🔊 VOZ ON</button><button class="btn" id="btnBorrar">🗑 BORRAR MEMORIA</button></div>
 </div>
 <div class="small">Historial guardado local • Creado por BF Villegas • ia-unificada-bf.vercel.app • v31 DIOS</div>
+
 <script>
-function actualizarReloj(){const ahora=new Date();const dia=String(ahora.getDate()).padStart(2,'0');const mes=String(ahora.getMonth()+1).padStart(2,'0');const anio=ahora.getFullYear();const h=String(ahora.getHours()).padStart(2,'0');const m=String(ahora.getMinutes()).padStart(2,'0');const s=String(ahora.getSeconds()).padStart(2,'0');document.getElementById('reloj').textContent=`${dia}/${mes}/${anio} ${h}:${m}:${s}`;}
+function actualizarReloj(){const a=new Date();const d=String(a.getDate()).padStart(2,'0');const m=String(a.getMonth()+1).padStart(2,'0');const an=a.getFullYear();const h=String(a.getHours()).padStart(2,'0');const mm=String(a.getMinutes()).padStart(2,'0');const s=String(a.getSeconds()).padStart(2,'0');document.getElementById('reloj').textContent=`${d}/${m}/${an} ${h}:${mm}:${s}`;}
 setInterval(actualizarReloj,1000);actualizarReloj();
 
 let historial=JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
+const MAX_MEMORIA=100;
 let vozActiva=true;
 const chatEl=document.getElementById('chat'),promptEl=document.getElementById('prompt');
 const btnEl=document.getElementById('btnResponder'),btnMic=document.getElementById('btnMic'),btnVoz=document.getElementById('btnVoz');
-function render(){chatEl.innerHTML='';historial.slice(-20).forEach(m=>{const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'ai');d.textContent=m.content;chatEl.appendChild(d);});chatEl.scrollTop=chatEl.scrollHeight;}
+
+function guardarMemoria(){
+ // Mantener solo últimos 100
+ if(historial.length>MAX_MEMORIA){historial=historial.slice(-MAX_MEMORIA);}
+ localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
+ try{localStorage.setItem('bf_v31_hist_time',Date.now().toString());}catch{}
+ document.getElementById('memoriaInfo').textContent=`🧠 Memoria: ${historial.length}/${MAX_MEMORIA} mensajes recordados • Pantalla limpia por pregunta • Último guardado: ${new Date().toLocaleTimeString()}`;
+}
+
+// Muestra SOLO la última pregunta/respuesta (pantalla limpia)
+function renderActual(userMsg, aiMsg){
+ chatEl.innerHTML='';
+ if(userMsg){const d=document.createElement('div');d.className='msg user';d.textContent=userMsg;chatEl.appendChild(d);}
+ if(aiMsg){const d=document.createElement('div');d.className='msg ai';d.textContent=aiMsg;chatEl.appendChild(d);}
+ chatEl.scrollTop=chatEl.scrollHeight;
+}
+
 function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-MX';speechSynthesis.speak(u);}
-async function responder(){const p=promptEl.value.trim();if(!p)return;btnEl.textContent='PENSANDO...';historial.push({role:'user',content:p});localStorage.setItem('bf_v31_hist',JSON.stringify(historial));render();promptEl.value='';try{const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,historial:historial.slice(-10)})});const j=await r.json();historial.push({role:'assistant',content:j.text});hablar(j.text);}catch(e){historial.push({role:'assistant',content:'Error:'+e.message});}localStorage.setItem('bf_v31_hist',JSON.stringify(historial));render();btnEl.textContent='RESPONDER';}
-btnEl.onclick=responder;promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();responder();}});
-document.getElementById('btnBorrar').onclick=()=>{historial=[];localStorage.removeItem('bf_v31_hist');render();};
+
+async function responder(){
+ const p=promptEl.value.trim();if(!p)return;
+ // LIMPIAR PANTALLA POR CADA NUEVA PREGUNTA
+ chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando con memoria de '+historial.length+' mensajes...</div>';
+ btnEl.textContent='PENSANDO...';
+ historial.push({role:'user',content:p,ts:Date.now()});
+ guardarMemoria();
+ promptEl.value='';
+ try{
+  // Mandamos los últimos 100 mensajes al cerebro
+  const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,historial:historial.slice(-100)})});
+  const j=await r.json();
+  historial.push({role:'assistant',content:j.text,model:j.cerebro,ts:Date.now()});
+  guardarMemoria();
+  renderActual(p,j.text);
+  hablar(j.text);
+ }catch(e){
+  const err='Error: '+e.message;
+  historial.push({role:'assistant',content:err,ts:Date.now()});
+  guardarMemoria();
+  renderActual(p,err);
+ }
+ btnEl.textContent='RESPONDER';
+}
+
+btnEl.onclick=responder;
+promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();responder();}});
+document.getElementById('btnBorrar').onclick=()=>{if(confirm('¿Borrar memoria de 100 mensajes?')){historial=[];guardarMemoria();chatEl.innerHTML='';}};
 btnVoz.onclick=()=>{vozActiva=!vozActiva;btnVoz.textContent=vozActiva?'🔊 VOZ ON':'🔇 VOZ OFF';};
 let rec=null;btnMic.onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
-render();
+
+// Al iniciar, no mostrar historial, solo info de memoria
+guardarMemoria();
+chatEl.innerHTML='<div class="memoria">👁️ Pantalla limpia • Memoria fantasma activa con '+historial.length+' mensajes previos recordados</div>';
 </script>
 </body>
 </html>
