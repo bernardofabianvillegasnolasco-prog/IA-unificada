@@ -15,27 +15,28 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
 #panelAjustes.show{display:block}
 .opcion{width:100%;background:#0a0a0a;color:#fff;border:1px solid #333;border-radius:10px;padding:10px;margin:6px 0;font-size:12px;cursor:pointer;text-align:left}
 
-/* SOLO TEXTO SE MUEVE */
+/* SOLO IA BF SE MUEVE - RESTO INMOVIL */
 .DI{
  text-align:center;
- font-family:'Black Ops One', 'Orbitron', sans-serif;
+ font-family:'Black Ops One', sans-serif;
  font-size:68px;
  font-weight:900;
  letter-spacing:10px;
  color:#fff;
  margin:8px 0 2px 0;
  display:block;
- animation: soloTexto 2.2s ease-in-out infinite, colores 6s linear infinite;
+ /* Animacion solo aqui */
+ animation: latidoTexto 2.2s ease-in-out infinite, colorTexto 6s linear infinite;
  will-change: transform;
 }
-@keyframes soloTexto{
- 0%{transform: scale(1)}
- 14%{transform: scale(1.08)}
- 28%{transform: scale(1)}
- 42%{transform: scale(1.08)}
- 70%{transform: scale(1)}
+@keyframes latidoTexto{
+ 0%{transform:scale(1)}
+ 14%{transform:scale(1.08)}
+ 28%{transform:scale(1)}
+ 42%{transform:scale(1.08)}
+ 70%{transform:scale(1)}
 }
-@keyframes colores{
+@keyframes colorTexto{
  0%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
  25%{text-shadow:0 0 10px #00ff88,0 0 20px #00ff88,0 0 40px #00ff88}
  50%{text-shadow:0 0 10px #00aaff,0 0 20px #00aaff,0 0 40px #00aaff}
@@ -43,7 +44,10 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
  100%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
 }
 
+/* ESTO NO SE MUEVE - FIJO */
 .sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px;letter-spacing:2px;opacity:0.8}
+#reloj, #btnAjustes, .box, .btn, .btn-3d-responder, .small, #chat{transform:none !important; animation:none !important;}
+
 .box{border:1px solid #222;border-radius:16px;padding:10px;margin:8px 0;background:#0a0a0a}
 .btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.5),inset 0 2px 0 rgba(255,255,255,0.3);cursor:pointer}
 .btn{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:12px;font-weight:900;margin:4px 0}
@@ -65,7 +69,7 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div class="sub">IA BF UNIVERSAL v31 • Creado por BF Villegas</div>
 <div id="chat"></div>
 <div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
-<div class="small">IA BF SOLO TEXTO • ia-unificada-bf.vercel.app</div>
+<div class="small">Solo IA BF se mueve • resto fijo</div>
 
 <script>
 function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
