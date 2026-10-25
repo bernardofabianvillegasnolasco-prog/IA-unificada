@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IA BF v31</title>
+<title>IA BF v4.0.39</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Black+Ops+One&display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;padding-top:46px;overflow-x:hidden}
@@ -30,7 +30,6 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
  display:inline-block;
  transform: translateZ(0);
  will-change: transform;
- /* 2 animaciones solo en este span: movimiento + colores */
  animation: moverIABF 2.2s ease-in-out infinite, coloresIABF 6s linear infinite;
 }
 @keyframes moverIABF{
@@ -48,14 +47,10 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
  100%{color:#fff; text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
 }
 
-/* RESTO INMOVIL */
-.sub,.box,.btn,.btn-3d-responder,.small,#chat,#reloj,#btnAjustes{animation:none !important; transform:none !important}
-
 .sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px;letter-spacing:2px;opacity:0.7}
 .box{border:1px solid #222;border-radius:16px;padding:10px;margin:8px 0;background:#0a0a0a}
 .btn-3d-responder{width:100%;padding:18px 0;border:none;border-radius:22px;background:linear-gradient(180deg,#ff3344 0%,#cc0011 50%,#88000a 100%);color:#fff;font-weight:900;font-size:22px;letter-spacing:5px;box-shadow:0 8px 0 #550007,0 12px 20px rgba(255,0,51,0.4);cursor:pointer}
 .btn{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:12px;font-weight:900;margin:4px 0}
-.small{font-size:9px;opacity:.4;text-align:center;margin-top:16px}
 #chat{max-height:50vh;overflow-y:auto}
 .msg{margin:8px 0;padding:12px;border-radius:14px;border:1px solid #333;white-space:pre-wrap}
 .user{background:linear-gradient(135deg,#00ff88,#00cc66);color:#000}
@@ -65,15 +60,14 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 </head>
 <body>
 <button id="btnAjustes">⚙️</button>
-<div id="panelAjustes"><div style="font-size:10px;color:#888;margin-bottom:8px">AJUSTES IA BF</div><button class="opcion" id="optVoz">🔊 Voz: ON</button><button class="opcion" id="optTest">🔈 Probar voz</button><button class="opcion" id="optBorrar">🗑️ Borrar memoria</button><button class="opcion" id="optCerrar">✖️ Cerrar</button></div>
+<div id="panelAjustes"><div style="font-size:10px;color:#888;margin-bottom:8px">AJUSTES IA BF v4.0.39</div><button class="opcion" id="optVoz">🔊 Voz: ON</button><button class="opcion" id="optTest">🔈 Probar voz</button><button class="opcion" id="optBorrar">🗑️ Borrar memoria</button><button class="opcion" id="optCerrar">✖️ Cerrar</button></div>
 <div id="reloj"><div id="fecha">25/10/2026</div><div id="hora">00:00:00</div></div>
 
 <div class="DI"><span>IA BF</span></div>
 
-<div class="sub">IA BF UNIVERSAL v31 • Creado por BF Villegas</div>
+<div class="sub">IA BF v4.0.39 • Creado por BF Villegas</div>
 <div id="chat"></div>
 <div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
-<div class="small">Solo IA BF colores + movimiento • resto inmovil</div>
 
 <script>
 function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
@@ -81,7 +75,7 @@ setInterval(actualizarReloj,1000);actualizarReloj();
 const btnAjustes=document.getElementById('btnAjustes'),panel=document.getElementById('panelAjustes');
 btnAjustes.onclick=()=>panel.classList.toggle('show');
 document.getElementById('optCerrar').onclick=()=>panel.classList.remove('show');
-let historial=JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
+let historial=JSON.parse(localStorage.getItem('bf_v4_hist')||'[]');
 let vozActiva=localStorage.getItem('bf_voz')!=='off';
 let voces=[];function cargarVoces(){voces=speechSynthesis.getVoices();}speechSynthesis.onvoiceschanged=cargarVoces;cargarVoces();setTimeout(cargarVoces,500);
 function limpiarParaVoz(t){return t.replace(/\r/g,'').replace(/\n+/g,', ').replace(/\*\*/g,' ').replace(/\*/g,' ').replace(/#/g,' ').replace(/`/g,' ').replace(/_/g,'').replace(/\s+/g,' ').trim();}
@@ -93,11 +87,11 @@ async function responder(){
  const p=promptEl.value.trim();if(!p)return;
  chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
  btnEl.textContent='PENSANDO...';
- historial.push({role:'user',content:p});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
+ historial.push({role:'user',content:p});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v4_hist',JSON.stringify(historial));
  promptEl.value='';
  try{
   const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,historial:historial.slice(-100)})});
-  const j=await r.json();historial.push({role:'assistant',content:j.text});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
+  const j=await r.json();historial.push({role:'assistant',content:j.text});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v4_hist',JSON.stringify(historial));
   renderActual(p,j.text);hablar(j.text);
  }catch(e){renderActual(p,'Error:'+e.message);}
  btnEl.textContent='RESPONDER';
@@ -105,8 +99,8 @@ async function responder(){
 btnEl.onclick=()=>{speechSynthesis.resume();responder();};
 promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();speechSynthesis.resume();responder();}});
 optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(vozActiva)hablar('Voz activada, soy IA BF');else speechSynthesis.cancel();};
-document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Hola, soy IA BF');};
-document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v31_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
+document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Hola, soy IA BF v4 punto 0 punto 39');};
+document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v4_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
 let rec=null;btnMic.onclick=()=>{speechSynthesis.resume();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
 document.body.addEventListener('click',()=>{speechSynthesis.resume();},{once:true});
 </script>
