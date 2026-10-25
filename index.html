@@ -15,7 +15,7 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
 #panelAjustes.show{display:block}
 .opcion{width:100%;background:#0a0a0a;color:#fff;border:1px solid #333;border-radius:10px;padding:10px;margin:6px 0;font-size:12px;cursor:pointer;text-align:left}
 
-/* TEXTO CHINGON CAMBIO DE COLORES */
+/* SOLO TEXTO SE MUEVE */
 .DI{
  text-align:center;
  font-family:'Black Ops One', 'Orbitron', sans-serif;
@@ -24,22 +24,23 @@ body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:12px;p
  letter-spacing:10px;
  color:#fff;
  margin:8px 0 2px 0;
- animation: latido 2.2s ease-in-out infinite, colores 6s linear infinite;
- transform-origin: center;
+ display:block;
+ animation: soloTexto 2.2s ease-in-out infinite, colores 6s linear infinite;
+ will-change: transform;
 }
-@keyframes latido{
- 0%{transform: perspective(400px) rotateX(12deg) scale(1)}
- 14%{transform: perspective(400px) rotateX(12deg) scale(1.08)}
- 28%{transform: perspective(400px) rotateX(12deg) scale(1)}
- 42%{transform: perspective(400px) rotateX(12deg) scale(1.08)}
- 70%{transform: perspective(400px) rotateX(12deg) scale(1)}
+@keyframes soloTexto{
+ 0%{transform: scale(1)}
+ 14%{transform: scale(1.08)}
+ 28%{transform: scale(1)}
+ 42%{transform: scale(1.08)}
+ 70%{transform: scale(1)}
 }
 @keyframes colores{
- 0%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033,0 3px 0 #88000a,0 6px 0 #550007,0 10px 20px rgba(0,0,0,0.9); color:#fff}
- 25%{text-shadow:0 0 10px #00ff88,0 0 20px #00ff88,0 0 40px #00ff88,0 3px 0 #008844,0 6px 0 #004422,0 10px 20px rgba(0,0,0,0.9); color:#e0ffe0}
- 50%{text-shadow:0 0 10px #00aaff,0 0 20px #00aaff,0 0 40px #00aaff,0 3px 0 #004488,0 6px 0 #002244,0 10px 20px rgba(0,0,0,0.9); color:#e0f0ff}
- 75%{text-shadow:0 0 10px #ffcc00,0 0 20px #ffaa00,0 0 40px #ff8800,0 3px 0 #884400,0 6px 0 #442200,0 10px 20px rgba(0,0,0,0.9); color:#fff8e0}
- 100%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033,0 3px 0 #88000a,0 6px 0 #550007,0 10px 20px rgba(0,0,0,0.9); color:#fff}
+ 0%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
+ 25%{text-shadow:0 0 10px #00ff88,0 0 20px #00ff88,0 0 40px #00ff88}
+ 50%{text-shadow:0 0 10px #00aaff,0 0 20px #00aaff,0 0 40px #00aaff}
+ 75%{text-shadow:0 0 10px #ffaa00,0 0 20px #ffaa00,0 0 40px #ffaa00}
+ 100%{text-shadow:0 0 10px #ff0033,0 0 20px #ff0033,0 0 40px #ff0033}
 }
 
 .sub{color:#00ff88;text-align:center;font-size:10px;margin-bottom:12px;letter-spacing:2px;opacity:0.8}
@@ -64,7 +65,7 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div class="sub">IA BF UNIVERSAL v31 • Creado por BF Villegas</div>
 <div id="chat"></div>
 <div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
-<div class="small">IA BF COLORES DIOS • ia-unificada-bf.vercel.app</div>
+<div class="small">IA BF SOLO TEXTO • ia-unificada-bf.vercel.app</div>
 
 <script>
 function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
