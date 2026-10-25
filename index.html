@@ -43,7 +43,6 @@ const btnAjustes=document.getElementById('btnAjustes'),panel=document.getElement
 btnAjustes.onclick=()=>panel.classList.toggle('show');
 document.getElementById('optCerrar').onclick=()=>panel.classList.remove('show');
 document.addEventListener('click',e=>{if(!panel.contains(e.target)&&e.target!==btnAjustes)panel.classList.remove('show');});
-
 let historial=JSON.parse(localStorage.getItem('bf_v31_hist')||'[]');
 let vozActiva=localStorage.getItem('bf_voz')!=='off';
 const chatEl=document.getElementById('chat'),promptEl=document.getElementById('prompt');
@@ -51,25 +50,23 @@ const btnEl=document.getElementById('btnResponder'),btnMic=document.getElementBy
 const optVoz=document.getElementById('optVoz'),optBorrar=document.getElementById('optBorrar');
 function actualizarVozUI(){optVoz.textContent=vozActiva?'🔊 Voz: ON':'🔇 Voz: OFF';}
 actualizarVozUI();
-
 function limpiarParaVoz(texto){
   return texto
-    .replace(/\r/g, '')
-    // Cambio de renglón = coma (pausa)
-    .replace(/\n+/g, ', ')
-    // Quitamos solo los que hacen decir "asterisco" y "gato"
-    .replace(/\*\*/g, ' ')
-    .replace(/\*/g, ' ')
-    .replace(/#/g, ' ')
-    .replace(/`/g, ' ')
-    .replace(/_/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/\r/g,'')
+    // Salto de linea = PAUSA LARGA
+    .replace(/\n\n+/g,' ... ')
+    .replace(/\n/g,' ... ')
+    // Solo quitamos * y # para no decir asterisco/gato
+    .replace(/\*\*/g,' ')
+    .replace(/\*/g,' ')
+    .replace(/#/g,' ')
+    .replace(/`/g,' ')
+    .replace(/_/g,'')
+    .replace(/\s+/g,' ')
     .trim();
 }
-
 function renderActual(u,a){chatEl.innerHTML='';if(u){const d=document.createElement('div');d.className='msg user';d.textContent=u;chatEl.appendChild(d);}if(a){const d=document.createElement('div');d.className='msg ai';d.textContent=a;chatEl.appendChild(d);}}
-function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const limpio=limpiarParaVoz(t);if(!limpio)return;const u=new SpeechSynthesisUtterance(limpio);u.lang='es-MX';u.rate=0.95;speechSynthesis.speak(u);}
-
+function hablar(t){if(!vozActiva)return;speechSynthesis.cancel();const limpio=limpiarParaVoz(t);if(!limpio)return;const u=new SpeechSynthesisUtterance(limpio);u.lang='es-MX';u.rate=0.92;u.pitch=1;speechSynthesis.speak(u);}
 async function responder(){
  const p=promptEl.value.trim();if(!p)return;
  chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
