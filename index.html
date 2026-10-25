@@ -27,7 +27,6 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div id="reloj">00/00/0000 00:00:00</div>
 <div class="DI">IA BF</div>
 <div class="sub">IA BF UNIVERSAL v31 • MEMORIA FANTASMA 100 • Creado por BF Villegas</div>
-<div class="memoria" id="memoriaInfo">🧠 Memoria: 0/100 mensajes recordados • Pantalla limpia por pregunta</div>
 <div id="chat"></div>
 <div class="box">
 <textarea id="prompt" rows="2" placeholder="Pregunta... la pantalla se limpiará pero recordaré 100 mensajes"></textarea>
@@ -52,7 +51,6 @@ function guardarMemoria(){
  if(historial.length>MAX_MEMORIA){historial=historial.slice(-MAX_MEMORIA);}
  localStorage.setItem('bf_v31_hist',JSON.stringify(historial));
  try{localStorage.setItem('bf_v31_hist_time',Date.now().toString());}catch{}
- document.getElementById('memoriaInfo').textContent=`🧠 Memoria: ${historial.length}/${MAX_MEMORIA} mensajes recordados • Pantalla limpia por pregunta • Último guardado: ${new Date().toLocaleTimeString()}`;
 }
 
 // Muestra SOLO la última pregunta/respuesta (pantalla limpia)
