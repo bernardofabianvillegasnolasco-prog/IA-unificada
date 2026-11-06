@@ -44,7 +44,7 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div id="version">v4.0.39</div>
 
 <script>
-function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;document.getElementById('hora').textContent=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`;}
+function actualizarReloj(){const a=new Date();document.getElementById('fecha').textContent=`${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}/${a.getFullYear()}`;const _h=a.getHours();const _ampm=_h>=12?'PM':'AM';const _h12=_h%12||12;document.getElementById('hora').textContent=`${String(_h12).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')} ${_ampm}`;}
 setInterval(actualizarReloj,1000);actualizarReloj();
 const btnAjustes=document.getElementById('btnAjustes'),panel=document.getElementById('panelAjustes');
 btnAjustes.onclick=()=>panel.classList.toggle('show');
