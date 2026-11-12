@@ -71,7 +71,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // --- VOZ + IA (lo que ya tenías) ---
+    
+// --- FB POST ---
+if (texto.startsWith('bf post fb ')) {
+  const contenido = prompt.slice(11).trim();
+  const r = await fetch('https://ia-unificada-bf.vercel.app/api/post-fb', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto: contenido })
+  });
+  const d = await r.json();
+  if (d.id) await send(`OK Publicado en FB:\n${contenido}`);
+  else await send(`Error FB: ${JSON.stringify(d)}`);
+  return res.status(200).json({ ok: true });
+}
+
+// --- VOZ + IA (lo que ya tenías) ---
     if (msg.voice) {
       await send(`🎤 Te escucho jefe...`);
       const f = await fetch(`${api}/getFile?file_id=${msg.voice.file_id}`).then(r => r.json());
