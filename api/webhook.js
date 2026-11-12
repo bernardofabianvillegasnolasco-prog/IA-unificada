@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Contesta YA a Telegram para que no espere, así es el primero
   res.status(200).json({ ok: true });
   try {
     const update = req.body;
@@ -7,42 +6,47 @@ export default async function handler(req, res) {
     if (!msg) return;
     const chatId = msg.chat.id;
     const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const GROQ = process.env.GROQ_API_KEY;
     const api = `https://api.telegram.org/bot${TOKEN}`;
-    // 1. PRIMERO: decirle a Telegram que ya está escribiendo
-    await fetch(`${api}/sendChatAction`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, action: 'typing' })
-    });
     const send = async (txt) => {
-      await fetch(`${api}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: txt })
-      });
+      await fetch(`${api}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: txt }) });
     };
-    // 2. Si es voz, decir que lo escuchó primero
+    await fetch(`${api}/sendChatAction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, action: 'typing' }) });
+
+    let prompt = "";
+    // Si es voz, el cerebro la transcribe primero
     if (msg.voice) {
-      await send(`🎤 Te escucho jefe, soy Copiloto BF, ya te estoy contestando yo primero...`);
-      return;
-    }
-    if (!msg.text) return;
-    const text = msg.text.trim();
-    const low = text.toLowerCase();
-    // 3. Comandos directos - contestan al instante, sin esperar al cerebro
-    if (low.startsWith('bf ayuda') || low === '/start' || low === '/help') {
-      await send(`🤖 COPILOTO BF - YO CONTESTO PRIMERO\n\nSoy el primero en contestarte en este bot.\n\n• bf ayuda - Ayuda\n• bf clima - Clima Phoenix\n• bf ia [pregunta] - Habla con tu IA BF x13\n• Manda nota de voz - Te escucho yo`);
-      return;
-    }
-    if (low.startsWith('bf clima')) {
-      const c = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.4484&longitude=-112.0740&current=temperature_2m&timezone=America/Phoenix').then(r => r.json());
-      await send(`🌤️ COPILOTO BF PRIMERO: Phoenix ${c.current.temperature_2m}°C`);
-      return;
-    }
-    // 4. Todo lo demás va a tu cerebro, pero con tu nombre primero
-    const prompt = text.replace(/^bf ia\s*/i, '').replace(/^bf\s*/i, '') || text;
+      await send(`🎤 Te escucho jefe, le paso tu voz a mi cerebro...`);
+      const fileId = msg.voice.file_id;
+      const f = await fetch(`${api}/getFile?file_id=${fileId}`).then(r => r.json());
+      const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${f.result.file_path}`;
+      const audio = await fetch(fileUrl).then(r => r.arrayBuffer());
+      const form = new FormData();
+      form.append('file', new Blob([audio], { type: 'audio/ogg' }), 'voz.ogg');
+      form.append('model', 'whisper-large-v3');
+      form.append('language', 'es');
+      const tr = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${GROQ}` }, body: form }).then(r => r.json());
+      prompt = tr.text || "";
+      await send(`🎤 Escuché: ${prompt}`);
+    } else if (msg.text) {
+      prompt = msg.text.trim();
+    } else return;
+
+    // TODO VA AL CEREBRO - EL CEREBRO ES EL BOT
     const r = await fetch('https://ia-unificada-bf.vercel.app/api/cerebro', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, historial: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({
+        prompt,
+        historial: [{ role: 'user', content: prompt }],
+        // Le decimos al cerebro quién es
+        system: 'Eres Copiloto BF, el asistente de BF Villegas en Phoenix, AZ. Hablas estilo mexicano, directo, chido. Puedes ver clima de Phoenix, tareas, notas, chistes, y contestar como BF x13. Tú eres el cerebro del bot de Telegram @Bf_crazy_bot, tú decides todo.'
+      })
     }).then(r => r.json());
-    await send(`🤖 COPILOTO BF - PRIMERO [${r.cerebro || 'BF x13'}]:\n\n${r.text || 'No me respondió el cerebro.'}`);
+
+    const respuesta = r.text || 'No me respondió mi cerebro, jefe.';
+    // Parte si es larga, para que no se corte
+    for (let i = 0; i < respuesta.length; i += 3500) {
+      await send(`🤖 COPILOTO BF - CEREBRO [${r.cerebro || 'BF x13'}]:\n\n${respuesta.slice(i, i + 3500)}`);
+    }
   } catch (e) { console.error(e); }
 }
