@@ -122,6 +122,7 @@ cargarMemoriaBF();
 const chatEl=document.getElementById('chat'),promptEl=document.getElementById('prompt'),btnEl=document.getElementById('btnResponder'),btnMic=document.getElementById('btnMic'),optVoz=document.getElementById('optVoz');
 function actualizarVozUI(){optVoz.textContent=vozActiva?'🔊 Voz: ON':'🔇 Voz: OFF';}actualizarVozUI();
 function renderActual(u,a){chatEl.innerHTML='';if(u){const d=document.createElement('div');d.className='msg user';d.textContent=u;chatEl.appendChild(d);}if(a){const d=document.createElement('div');d.className='msg ai';d.textContent=a;chatEl.appendChild(d);}}
+function mostrarImagenBF(url){ const c = document.getElementById('chat') || document.querySelector('.chat') || document.body; const img = document.createElement('img'); img.src = url; img.style.width='100%'; img.style.maxWidth='420px'; img.style.borderRadius='16px'; img.style.margin='10px 0'; img.alt='Imagen generada por BF'; c.appendChild(img); c.scrollTop = c.scrollHeight; }
 async function responder(){ actualizarPerfilDesdeTexto(promptEl.value);
  const p=promptEl.value.trim();if(!p)return;
  chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
@@ -328,6 +329,7 @@ if(typeof hablar !== 'undefined'){
         const data = await clone.json().catch(()=>null);
         if(data && data.reply) data.reply = limpiar(data.reply);
         if(data && data.text) data.text = limpiar(data.text);
+        if(data.imagen || data.url){ mostrarImagenBF(data.imagen || data.url); }
         if(data && data.respuesta) data.respuesta = limpiar(data.respuesta);
         return new Response(JSON.stringify(data), {headers: res.headers, status: res.status});
       }

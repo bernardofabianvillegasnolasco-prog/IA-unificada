@@ -147,13 +147,26 @@ REGLAS:
 - Respuestas cortas, no párrafos eternos. Como hablando, no como ensayo.
 `;
 
+function generaImagenBF(prompt){ const limpio = String(prompt||'').replace(/genera una imagen de|genera imagen|crea una imagen|haz una imagen|dibujame|dibuja|imagen de/gi,'').trim().slice(0,500) || prompt; const seed = Math.floor(Math.random()*1000000); const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=1024&height=1024&seed=' + seed + '&model=flux&nologo=true'; return {url, prompt: limpio}; }
 export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Origin","*");
  res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
  res.setHeader("Access-Control-Allow-Headers","Content-Type");
  if(req.method==="OPTIONS") return res.status(200).end();
  if(req.query?.voz==="1" || req.body?.accion==="voz"){ return responderVozDalia(req, res, req.body?.texto || req.body?.text || req.query?.texto || ""); }
-  const _b=req.body||{}; const prompt=_b.prompt||_b.mensaje||_b.texto||_b.text||_b.message||''; const historial=_b.historial||[]; const perfil=_b.perfil||{};
+  const _b=req.body||{}; const prompt=_b.prompt||_b.mensaje||_b.texto||_b.text||_b.message||'';
+ const lowImg = String(prompt||'').toLowerCase();
+ if(lowImg.includes('genera') && lowImg.includes('imagen') || lowImg.includes('crea una imagen') || lowImg.includes('haz una imagen') || lowImg.includes('dibujame') || lowImg.includes('dibuja una imagen') || lowImg.includes('imagen de')){
+   const img = generaImagenBF(prompt);
+   try{
+     const ipImg = getIPCerebro(req); const idImg = 'ip-' + ipImg;
+     let memImg = null; try{ if(process.env.UPSTASH_REDIS_REST_URL) memImg = await leerRedisCerebro(idImg); }catch(e){}
+     const histImg = [...(memImg?.historial||[]), {role:'user', content:prompt}, {role:'assistant', content:'Listo, ya te genere la imagen..'}].slice(-20);
+     const aGuardarImg = {...(memImg||{}), historial: histImg, actualizado: new Date().toISOString()};
+     if(process.env.UPSTASH_REDIS_REST_URL) await guardarRedisCerebro(idImg, aGuardarImg);
+   }catch(e){}
+   return res.status(200).json({cerebro:'BF Imagen + Flux', text:'Listo, ya te genere la imagen..', imagen: img.url, url: img.url, prompt: img.prompt});
+ } const historial=_b.historial||[]; const perfil=_b.perfil||{};
  const ipCerebro = getIPCerebro(req); const idMemoria = 'ip-' + ipCerebro; let memoriaRedis = null;
  try{ if(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) memoriaRedis = await leerRedisCerebro(idMemoria); }catch(e){}
  const perfilMemoria = {...(memoriaRedis||{}), ...perfil};
