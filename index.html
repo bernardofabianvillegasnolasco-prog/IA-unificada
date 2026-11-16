@@ -391,6 +391,16 @@ console.log('SOLO DALIA activo ✅ - speechSynthesis apagado');
 </script>
 
 <script>if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }</script>
-<div style='text-align:center;opacity:0.5;font-size:11px'>VERSION-BF v1.0.9</div>
+<div style='text-align:center;opacity:0.5;font-size:11px'>VERSION-BF v1.0.10</div>
+<script>
+async function pedirPermisosBF(){
+  try{
+    const Cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+    if(Cap){ await Cap.requestPermissions(); console.log('permiso microfono APK pedido'); }
+    if('Notification' in window && Notification.permission === 'default'){ await Notification.requestPermission(); }
+  }catch(e){ console.log('permisos BF:', e.message); }
+}
+window.addEventListener('load', ()=>{ setTimeout(pedirPermisosBF, 800); });
+</script>
 </body>
 </html>
