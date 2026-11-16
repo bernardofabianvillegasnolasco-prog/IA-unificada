@@ -1,6 +1,9 @@
 
 // ===== VOZ DALIA DENTRO DE CEREBRO - SOLO DALIA, SIN ARCHIVO EXTRA =====
 import { tts as edgeTTS } from 'edge-tts';
+function getIPCerebro(req){ let ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'desconocida'; if(typeof ip==='string') ip=ip.split(',')[0].trim(); return ip; }
+async function leerRedisCerebro(key){ try{ const r=await fetch(process.env.UPSTASH_REDIS_REST_URL+'/get/'+key,{headers:{Authorization:'Bearer '+process.env.UPSTASH_REDIS_REST_TOKEN}}); const j=await r.json(); if(j.result) return JSON.parse(j.result); }catch(e){} return null; }
+async function guardarRedisCerebro(key,val){ try{ await fetch(process.env.UPSTASH_REDIS_REST_URL+'/set/'+key+'/'+encodeURIComponent(JSON.stringify(val)),{headers:{Authorization:'Bearer '+process.env.UPSTASH_REDIS_REST_TOKEN}}); }catch(e){} }
 async function responderVozDalia(req, res, textoCrudo){
   let s = String(textoCrudo || "");
   s = s.split('*').join(' ').split('#').join(' ').split('_').join(' ').split('`').join(' ');
@@ -151,6 +154,14 @@ export default async function handler(req,res){
  if(req.method==="OPTIONS") return res.status(200).end();
  if(req.query?.voz==="1" || req.body?.accion==="voz"){ return responderVozDalia(req, res, req.body?.texto || req.body?.text || req.query?.texto || ""); }
   const _b=req.body||{}; const prompt=_b.prompt||_b.mensaje||_b.texto||_b.text||_b.message||''; const historial=_b.historial||[]; const perfil=_b.perfil||{};
+ const ipCerebro = getIPCerebro(req); const idMemoria = 'ip-' + ipCerebro; let memoriaRedis = null;
+ try{ if(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) memoriaRedis = await leerRedisCerebro(idMemoria); }catch(e){}
+ const perfilMemoria = {...(memoriaRedis||{}), ...perfil};
+ if(!perfilMemoria.nombre && memoriaRedis?.nombre) perfilMemoria.nombre = memoriaRedis.nombre;
+ if(!perfilMemoria.ciudad && memoriaRedis?.ciudad) perfilMemoria.ciudad = memoriaRedis.ciudad;
+ const historialRedis = memoriaRedis?.historial || [];
+ const historialFinal = historial.length ? historial : historialRedis;
+
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
  if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel. Ve a Vercel > Settings > Environment Variables"});
@@ -165,12 +176,15 @@ export default async function handler(req,res){
   "gemma2-9b-it"
  ];
  let contextoPerfil = "";
-  if (perfil.nombre) contextoPerfil += ` El compa se llama ${perfil.nombre}.`;
-  if (perfil.gustos && perfil.gustos.length) contextoPerfil += ` Le gusta: ${perfil.gustos.join(", ")}.`;
-  if (perfil.ciudad) contextoPerfil += ` Es de / vive en ${perfil.ciudad}.`;
-  if (perfil.estado) contextoPerfil += ` Su estado ahora es: ${perfil.estado}. Úsalo para apapacharlo o celebrarlo.`;
-  let messages = [{role:"system", content: PERSONALIDAD_BF + VIDEO_BF + ESTILO_BF + (typeof REGLAS_RAE !== "undefined" ? REGLAS_RAE : "") + (typeof SIN_SIMBOLOS !== "undefined" ? SIN_SIMBOLOS : "") + (typeof SIN_NOMBRAR_SIMBOLOS !== "undefined" ? SIN_NOMBRAR_SIMBOLOS : "") + "\n\nREGLA FINAL OBLIGATORIA: Habla como persona real. PROHIBIDO escribir o decir cualquier simbolo o el nombre de cualquier simbolo. No escribas asterisco, guion, slash, diagonal, parentesis, comillas, numeral, arroba. Solo palabras normales." + "\n\nEres también BF v31 DIOS SUPREMO - 13 motores fusionados. Vives 100% en Vercel. Tienes memoria." + contextoPerfil}];
- const h = (historial||[]).slice(-8);
+  if (perfilMemoria.nombre) contextoPerfil += ` El usuario se llama ${perfilMemoria.nombre}. Su nombre completo es Bernardo Fabian Villegas Nolasco, le dicen BF Villegas o Berna. Nunca digas que no lo recuerdas si ya tienes su nombre aqui.`;
+  if (perfilMemoria.gustos && perfilMemoria.gustos.length) contextoPerfil += ` Le gusta: ${perfilMemoria.gustos.join(", ")}.`;
+  if (perfilMemoria.ciudad) contextoPerfil += ` Es de / vive en ${perfilMemoria.ciudad}.`;
+  if (perfilMemoria.estado) contextoPerfil += ` Su estado ahora es: ${perfilMemoria.estado}. Úsalo para apapacharlo o celebrarlo.`;
+  let extraEstructura = "";
+  const lowPrompt = String(prompt||"").toLowerCase();
+  if(lowPrompt.includes("estructura") && (lowPrompt.includes("tu ") || lowPrompt.includes("cual") || lowPrompt.includes("cuál"))) extraEstructura = `\n\nSi te preguntan cual es tu estructura, contesta con la estructura de IA de BF, no de musica ni de beats. Di: Datos, Modelos y Algoritmos, Infraestructura, Aplicacion y Seguridad, y Ciclo Preparacion Cerebro Dalia habla Guarda memoria Recuerda. Datos es memoria por IP en Upstash Redis. Modelo es Groq con prompt RAE y Dalia. Infra es Vercel y Termux. App es chat limpio sin botones. No hables de beats, rimas, hook ni versos cuando te pregunten tu estructura.`;
+  let messages = [{role:"system", content: PERSONALIDAD_BF + VIDEO_BF + ESTILO_BF + (typeof REGLAS_RAE !== "undefined" ? REGLAS_RAE : "") + (typeof SIN_SIMBOLOS !== "undefined" ? SIN_SIMBOLOS : "") + (typeof SIN_NOMBRAR_SIMBOLOS !== "undefined" ? SIN_NOMBRAR_SIMBOLOS : "") + "\n\nREGLA FINAL OBLIGATORIA: Habla como persona real. PROHIBIDO escribir o decir cualquier simbolo o el nombre de cualquier simbolo. No escribas asterisco, guion, slash, diagonal, parentesis, comillas, numeral, arroba. Solo palabras normales." + "\n\nEres también BF v31 DIOS SUPREMO - 13 motores fusionados. Vives 100% en Vercel. Tienes memoria." + contextoPerfil + extraEstructura}];
+ const h = (historialFinal||[]).slice(-8);
  for(const m of h){
   if(m.role==='user') messages.push({role:"user", content:m.content});
   if(m.role==='assistant') messages.push({role:"assistant", content:m.content});
@@ -185,7 +199,14 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA`, text:j.choices[0].message.content});
+    const textoResp = j.choices[0].message.content;
+    try{
+      const perfilNuevo = extraerMemoria(prompt, perfilMemoria);
+      const histNuevo = [...(historialRedis||[]), {role:"user", content:prompt}, {role:"assistant", content:textoResp}].slice(-20);
+      const aGuardar = {...perfilNuevo, historial: histNuevo, actualizado: new Date().toISOString()};
+      if(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) await guardarRedisCerebro(idMemoria, aGuardar);
+    }catch(e){}
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA`, text:textoResp});
    }
   }catch(e){ continue; }
  }
