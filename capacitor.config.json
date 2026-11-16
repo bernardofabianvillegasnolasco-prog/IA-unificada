@@ -1,0 +1,12 @@
+{
+  "appId": "com.bfvillegas.iaunificada",
+  "appName": "BF IA",
+  "webDir": "www",
+  "server": {
+    "url": "https://ia-unificada-bf.vercel.app",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
