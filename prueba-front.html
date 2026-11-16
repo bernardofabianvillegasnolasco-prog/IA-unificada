@@ -1,0 +1,23 @@
+<!DOCTYPE html><html><body style="background:#111;color:#fff;font-family:sans-serif;padding:20px">
+<h2>PRUEBA BF</h2>
+<input id="t" value="que onda BF" style="width:80%;padding:10px"><br><br>
+<button onclick="probar()" style="padding:12px">PROBAR</button>
+<p id="salida">esperando...</p>
+<audio id="au" controls></audio>
+<script>
+async function probar(){
+  let txt=document.getElementById('t').value;
+  document.getElementById('salida').innerText='mandando...';
+  try{
+    let r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:txt})});
+    let j=await r.json();
+    document.getElementById('salida').innerText='TEXTO: '+(j.text||JSON.stringify(j));
+    let r2=await fetch('/api/cerebro?voz=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'voz',texto:j.text||txt})});
+    let blob=await r2.blob();
+    document.getElementById('salida').innerText+=' | AUDIO: '+blob.size+' bytes tipo:'+blob.type;
+    let au=document.getElementById('au');
+    au.src=URL.createObjectURL(blob);
+    au.play();
+  }catch(e){ document.getElementById('salida').innerText='ERROR: '+e.message; }
+}
+</script></body></html>

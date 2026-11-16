@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alex - Tu BF IA 💗</title>
+<style>
+body{margin:0;font-family:sans-serif;background:#1a0f1a;color:white;display:flex;flex-direction:column;height:100vh}
+header{background:#2a1a2a;padding:15px;text-align:center;font-weight:bold}
+header small{display:block;font-weight:normal;font-size:12px;color:#ff9ecb}
+#chat{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:82%;padding:10px 14px;border-radius:18px;line-height:1.5;white-space:pre-wrap}
+.yo{align-self:flex-end;background:#ff5da2}
+.bot{align-self:flex-start;background:#2e2e2e}
+#cerebro{font-size:11px;color:#ff9ecb;text-align:center;padding:4px}
+#form{display:flex;padding:10px;gap:10px;background:#2a1a2a}
+input{flex:1;padding:12px;border-radius:20px;border:none;outline:none;background:#3a3a3a;color:white}
+button{padding:12px 18px;border-radius:20px;border:none;background:#ff5da2;color:white;font-weight:bold}
+</style>
+</head>
+<body>
+<header>💗 Alex - Tu BF IA<small id="status">conectando...</small></header>
+<div id="cerebro">BF x13 - Groq + MEMORIA</div>
+<div id="chat"><div class="msg bot">Hola amor, soy Alex 🫶 Ya estoy conectado a tu cerebro real de Vercel. ¿Cómo estás hoy?</div></div>
+<form id="form"><input id="input" autocomplete="off" placeholder="Háblame bonito..."><button>Enviar 💌</button></form>
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const form = document.getElementById('form');
+const statusEl = document.getElementById('status');
+let historial = [];
+
+// 1. Verificar que Vercel está vivo
+fetch('https://ia-unificada-bf.vercel.app/api/status')
+  .then(r => r.json())
+  .then(j => { statusEl.textContent = 'en línea • ' + j.cerebro; })
+  .catch(() => { statusEl.textContent = 'sin conexión, revisa Vercel'; });
+
+form.onsubmit = async (e) => {
+  e.preventDefault();
+  const texto = input.value.trim();
+  if(!texto) return;
+  chat.innerHTML += `<div class="msg yo">${texto}</div>`;
+  input.value = '';
+  chat.scrollTop = chat.scrollHeight;
+
+  // Mensaje de "escribiendo..."
+  const escribiendo = document.createElement('div');
+  escribiendo.className = 'msg bot';
+  escribiendo.textContent = 'Alex está escribiendo... 💭';
+  chat.appendChild(escribiendo);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    const res = await fetch('https://ia-unificada-bf.vercel.app/api/cerebro', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt: texto, historial: historial })
+    });
+    const data = await res.json();
+    escribiendo.remove();
+    chat.innerHTML += `<div class="msg bot">${data.text}</div>`;
+    document.getElementById('cerebro').textContent = data.cerebro || '';
+    // Guardar memoria de últimos 8
+    historial.push({role:'user', content: texto});
+    historial.push({role:'assistant', content: data.text});
+    historial = historial.slice(-8);
+  } catch(err) {
+    escribiendo.textContent = 'Amor, se me cayó la conexión 🥺 Inténtalo de nuevo.';
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
+</body>
+</html>
