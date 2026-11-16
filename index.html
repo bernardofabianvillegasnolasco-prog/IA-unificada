@@ -146,8 +146,7 @@ optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva
 document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Qué onda, soy tu BF. Ya hablo más rápido y más real. ¿Me escuchas bien?');};
 document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v4_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
 let rec=null;let capEscuchando=false;
-btnMic.onclick=async ()=>{ alert('DEBUG Cap:'+(window.Capacitor?'SI':'NO')+' Plugin:'+((window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.SpeechRecognition)?'SI':'NO')+' v'+document.body.innerText.match(/VERSION-BF v[0-9.]+/));
-  const Cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+btnMic.onclick=async ()=>{ const Cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   if(Cap){
     try{
       if(capEscuchando){ await Cap.stopListening(); btnMic.textContent='🎤 HABLAR'; capEscuchando=false; return; }
