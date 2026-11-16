@@ -145,7 +145,24 @@ promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preve
 optVoz.onclick=()=>{vozActiva=!vozActiva;localStorage.setItem('bf_voz',vozActiva?'on':'off');actualizarVozUI();if(vozActiva)hablar('Voz activada');else /* speechSynthesis apagado */;};
 document.getElementById('optTest').onclick=()=>{vozActiva=true;localStorage.setItem('bf_voz','on');actualizarVozUI();cargarVoces();hablar('Qué onda, soy tu BF. Ya hablo más rápido y más real. ¿Me escuchas bien?');};
 document.getElementById('optBorrar').onclick=()=>{if(confirm('¿Borrar memoria?')){historial=[];localStorage.removeItem('bf_v4_hist');chatEl.innerHTML='';panel.classList.remove('show');}};
-let rec=null;btnMic.onclick=()=>{/* speechSynthesis apagado */;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();};
+let rec=null;let capEscuchando=false;
+btnMic.onclick=async ()=>{
+  const Cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+  if(Cap){
+    try{
+      if(capEscuchando){ await Cap.stopListening(); btnMic.textContent='🎤 HABLAR'; capEscuchando=false; return; }
+      const perm = await Cap.requestPermissions();
+      if(perm && perm.speechRecognition && perm.speechRecognition!=='granted'){ alert('Dale permiso de microfono a BF IA'); return; }
+      btnMic.textContent='🎙️ ESCUCHANDO...'; capEscuchando=true;
+      await Cap.removeAllListeners();
+      await Cap.addListener('partialResults', (d)=>{ if(d && d.matches && d.matches[0]){ promptEl.value=d.matches[0]; } });
+      await Cap.startListening({language:'es-MX', partialResults:true, popup:false});
+      setTimeout(async ()=>{ if(capEscuchando){ try{ await Cap.stopListening(); }catch(e){} btnMic.textContent='🎤 HABLAR'; capEscuchando=false; if(promptEl.value.trim()){ responder(); } } }, 8000);
+      return;
+    }catch(e){ alert('Mic no disponible en APK: '+e.message); btnMic.textContent='🎤 HABLAR'; capEscuchando=false; return; }
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Usa Chrome');return;}if(rec&&rec._on){rec.stop();return;}rec=new SR();rec.lang='es-MX';rec._on=true;rec.onstart=()=>{btnMic.textContent='🎙️ ESCUCHANDO...';};rec.onend=()=>{btnMic.textContent='🎤 HABLAR';rec._on=false;};rec.onresult=(e)=>{promptEl.value=e.results[0][0].transcript;responder();};rec.start();
+};
 document.body.addEventListener('click',()=>{/* speechSynthesis apagado */;},{once:true});
 
 // ===== TODO 3 - RUTINAS + AVATAR + EXTRAS BF =====
