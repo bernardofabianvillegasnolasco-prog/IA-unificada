@@ -8,6 +8,6 @@ export default async function handler(req, res){
   const seed = Math.floor(Math.random()*1000000);
   const width = body.width || 1024;
   const height = body.height || 1024;
-  const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=' + width + '&height=' + height + '&seed=' + seed + '&model=flux&nologo=true';
+  const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=' + width + '&height=' + height + '&seed=' + seed + '&model=flux&nologo=true&private=true&enhance=false';
   return res.status(200).json({ok:true, prompt: limpio, url, seed, texto: 'Listo, ya te genere la imagen..'});
 }

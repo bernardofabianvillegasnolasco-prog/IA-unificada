@@ -147,7 +147,7 @@ REGLAS:
 - Respuestas cortas, no párrafos eternos. Como hablando, no como ensayo.
 `;
 
-function generaImagenBF(prompt){ const limpio = String(prompt||'').replace(/genera una imagen de|genera imagen|crea una imagen|haz una imagen|dibujame|dibuja|imagen de/gi,'').trim().slice(0,500) || prompt; const seed = Math.floor(Math.random()*1000000); const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=1024&height=1024&seed=' + seed + '&model=flux&nologo=true'; return {url, prompt: limpio}; }
+function generaImagenBF(prompt){ const limpio = String(prompt||'').replace(/genera una imagen de|genera imagen|crea una imagen|haz una imagen|dibujame|dibuja|imagen de/gi,'').trim().slice(0,500) || prompt; const seed = Math.floor(Math.random()*1000000); const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=1024&height=1024&seed=' + seed + '&model=flux&nologo=true&private=true&enhance=false'; return {url, prompt: limpio}; }
 export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Origin","*");
  res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
