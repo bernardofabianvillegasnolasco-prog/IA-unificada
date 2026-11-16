@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "BF Villegas",
+  "short_name": "BF",
+  "description": "BF - Tu IA con voz Dalia, memoria y genera imagenes",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "categories": ["entertainment", "productivity"],
+  "icons": [
+    {"src": "/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

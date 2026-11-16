@@ -36,6 +36,10 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 #panelExtra { display: none !important; }
 </style>
 
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
@@ -369,5 +373,6 @@ window.hablarSoloDalia = hablarSoloDalia;
 console.log('SOLO DALIA activo ✅ - speechSynthesis apagado');
 </script>
 
+<script>if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }</script>
 </body>
 </html>
