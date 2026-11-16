@@ -1,7 +1,11 @@
+node_modules/
 .env
 .env.local
 backup/
 *.log
+*.tar.gz
 dalia-habla.mp3
 dalia-termux.mp3
 voz*.mp3
+v*.js
+check*.js
