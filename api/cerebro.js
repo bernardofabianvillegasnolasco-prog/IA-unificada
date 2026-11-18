@@ -19,10 +19,8 @@ function detectarSkill(pr){
  if(x.includes("asegura")) return "agent-security-hardening";
  if(x.includes("api")) return "api-design";
  try{
-  const fs2 = require("fs");
-  const path2 = require("path");
-  const dir = path2.join(__dirname, "..", "ecc-skills");
-  const lista = fs2.readdirSync(dir);
+  const dir = path.join(process.cwd(), "ecc-skills");
+  const lista = fs.readdirSync(dir);
   for(const s of lista){
    if(x.includes(s.toLowerCase())) return s;
   }
