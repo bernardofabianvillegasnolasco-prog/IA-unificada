@@ -79,6 +79,7 @@ export default async function handler(req,res){
  const {prompt, historial=[], skill, agent} = req.body||{};
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
+ const geminiKey = (process.env.GEMINI_API_KEY||"").trim();
  if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel"});
  const hookBloqueo = hookPre(prompt);
  if(hookBloqueo) return res.status(200).json({cerebro:"BF x13 + AgentShield HOOK PRE", text:hookBloqueo});
