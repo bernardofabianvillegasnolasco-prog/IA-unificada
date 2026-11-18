@@ -39,6 +39,7 @@ function cargarAgente(a){
 }
 function detectarAgente(pr){
  const x = (pr||"").toLowerCase();
+ // 1. Si lo pide explicito: usa agente code-reviewer
  try{
   const dir = path.join(process.cwd(), "ecc-agents");
   const lista = fs.readdirSync(dir);
@@ -47,6 +48,13 @@ function detectarAgente(pr){
    if(x.includes("agente " + nombre.toLowerCase()) || x.includes("agent " + nombre.toLowerCase())) return nombre;
   }
  }catch(e){}
+ // 2. Auto por intencion, sin seleccionar nada
+ if(x.includes("revisa") || x.includes("revisar") || x.includes("review") || x.includes("corrige")) return "code-reviewer";
+ if(x.includes("planifica") || x.includes("arquitectura") || x.includes("disena") || x.includes("diseña")) return "architect";
+ if(x.includes("error de build") || x.includes("no compila") || x.includes("falla el build") || x.includes("build")) return "build-error-resolver";
+ if(x.includes("base de datos") || x.includes("database") || x.includes("sql") || x.includes("tabla")) return "database-reviewer";
+ if(x.includes("simplifica") || x.includes("limpia este codigo")) return "code-simplifier";
+ if(x.includes("explora") || x.includes("busca en el codigo")) return "code-explorer";
  return "";
 }
 function hookPre(prompt){
