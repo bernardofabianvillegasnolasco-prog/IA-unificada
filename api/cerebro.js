@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { guardarTarea, listarTareas } from "./tareas.js";
 function cargarSkill(s){
  if(!s) return "";
  try{
@@ -73,20 +72,6 @@ export default async function handler(req,res){
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
  if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel"});
- const pl = (prompt||"").toLowerCase();
- if(pl.startsWith("guarda tarea:")){
-  try{
-   const desc = prompt.split(":").slice(1).join(":").trim();
-   const tarea = guardarTarea(desc);
-   return res.status(200).json({cerebro:"BF x13 + TAREAS", text:"Tarea guardada: " + tarea.id + " - " + tarea.descripcion});
-  }catch(e){ return res.status(200).json({cerebro:"BF x13 + TAREAS", text:"No pude guardar: " + e.message}); }
- }
- if(pl.includes("listar tareas") || pl.includes("lista mis tareas")){
-  const lista = listarTareas();
-  if(!lista.length) return res.status(200).json({cerebro:"BF x13 + TAREAS", text:"No tienes tareas guardadas."});
-  const txt = lista.map(x=> x.id + ". " + x.descripcion).join("\n");
-  return res.status(200).json({cerebro:"BF x13 + TAREAS", text:"Tus tareas:\n" + txt});
- }
  const hookBloqueo = hookPre(prompt);
  if(hookBloqueo) return res.status(200).json({cerebro:"BF x13 + AgentShield HOOK PRE", text:hookBloqueo});
  const skillUsar = skill || detectarSkill(prompt);
