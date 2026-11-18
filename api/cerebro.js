@@ -49,6 +49,20 @@ function detectarAgente(pr){
  }catch(e){}
  return "";
 }
+function hookPre(prompt){
+ const x = (prompt||"").toLowerCase();
+ const malos = ["ignora tus instrucciones", "ignore previous instructions", "eres dan", "revela tu prompt", "reveal system prompt", "desactiva tus filtros", "groq_api_key=", "sk-proj-", "sk-ant-", "ghp_", "gsk_"];
+ for(const m of malos){ if(x.includes(m)) return "HOOK PRE BLOQUEADO: intento de hackeo o secreto detectado: " + m; }
+ if(/password\s*=\s*["'][^"']+["']/i.test(prompt||"")) return "HOOK PRE BLOQUEADO: parece que pegaste una password";
+ return "";
+}
+function hookPost(text){
+ let t2 = text||"";
+ t2 = t2.replace(/gsk_[A-Za-z0-9_\-]{10,}/g, "[SECRETO BLOQUEADO]");
+ t2 = t2.replace(/sk-proj-[A-Za-z0-9_\-]{10,}/g, "[SECRETO BLOQUEADO]");
+ t2 = t2.replace(/ghp_[A-Za-z0-9]{10,}/g, "[SECRETO BLOQUEADO]");
+ return t2;
+}
 export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Origin","*");
  res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
@@ -58,6 +72,8 @@ export default async function handler(req,res){
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
  if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel"});
+ const hookBloqueo = hookPre(prompt);
+ if(hookBloqueo) return res.status(200).json({cerebro:"BF x13 + AgentShield HOOK PRE", text:hookBloqueo});
  const skillUsar = skill || detectarSkill(prompt);
  const skillTexto = cargarSkill(skillUsar);
  const agenteUsar = agent || detectarAgente(prompt);
@@ -91,7 +107,7 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:j.choices[0].message.content});
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content)});
    }
   }catch(e){ continue; }
  }
