@@ -18,6 +18,15 @@ function detectarSkill(pr){
  if(x.includes("revisa")) return "ecc-contribution-review";
  if(x.includes("asegura")) return "agent-security-hardening";
  if(x.includes("api")) return "api-design";
+ try{
+  const fs2 = require("fs");
+  const path2 = require("path");
+  const dir = path2.join(__dirname, "..", "ecc-skills");
+  const lista = fs2.readdirSync(dir);
+  for(const s of lista){
+   if(x.includes(s.toLowerCase())) return s;
+  }
+ }catch(e){}
  return "";
 }
 export default async function handler(req,res){
