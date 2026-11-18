@@ -63,7 +63,7 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div class="DI"><span>IA BF</span></div>
 <div class="sub">IA BF v4.0.39 • Creado por BF Villegas</div>
 <div id="chat"></div>
-<div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
+<div style="display:flex;gap:6px;margin-bottom:6px"><select id="selSkill" style="flex:1;background:#000;color:#0f0;border:1px solid #0f0;padding:6px;font-size:12px"><option value="">Skill: Auto</option><option value="agentic-engineering">planifica - agentic-engineering</option><option value="tdd-workflow">prueba - tdd-workflow</option><option value="ecc-contribution-review">revisa - ecc-contribution-review</option><option value="agent-security-hardening">asegura - agent-security-hardening</option><option value="api-design">api - api-design</option><option value="frontend-patterns">frontend-patterns</option><option value="python-testing">python-testing</option><option value="react-patterns">react-patterns</option></select><select id="selAgente" style="flex:1;background:#000;color:#0f0;border:1px solid #0f0;padding:6px;font-size:12px"><option value="">Agente: Ninguno</option><option value="code-reviewer">code-reviewer</option><option value="architect">architect</option><option value="code-architect">code-architect</option><option value="database-reviewer">database-reviewer</option><option value="build-error-resolver">build-error-resolver</option><option value="chief-of-staff">chief-of-staff</option></select></div><div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
 
 <div id="version">v4.0.39</div>
 
@@ -134,7 +134,7 @@ async function responder(){ actualizarPerfilDesdeTexto(promptEl.value);
  historial.push({role:'user',content:p});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v4_hist',JSON.stringify(historial));
  promptEl.value='';
  try{
-  const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({perfil: perfilBF, prompt:p,historial:historial.slice(-100)})});
+  const r=await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({perfil: perfilBF, prompt:p,historial:historial.slice(-100), skill: document.getElementById('selSkill')?.value||'', agent: document.getElementById('selAgente')?.value||''})});
   const j=await r.json();historial.push({role:'assistant',content:j.text});if(historial.length>100)historial=historial.slice(-100);localStorage.setItem('bf_v4_hist',JSON.stringify(historial));
   renderActual(p,j.text); if(j.imagen || j.url){ mostrarImagenBF(j.imagen || j.url); } hablar(j.text);guardarMemoriaBF();
  }catch(e){renderActual(p,'Error:'+e.message);}
