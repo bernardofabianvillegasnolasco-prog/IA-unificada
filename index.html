@@ -401,5 +401,57 @@ async function pedirPermisosBF(){
 }
 window.addEventListener('load', ()=>{ setTimeout(pedirPermisosBF, 800); });
 </script>
+
+<script>
+async function saludoBienvenida() {
+  try {
+    const saludos = [
+      "Salúdame improvisado, como si fueras Dalia, mi BF, contenta de verme entrar, en 1 frase corta, sin decir asterisco ni símbolos",
+      "Dame un saludo improvisado diferente, cálido y con tu estilo, como Dalia, en 1 frase corta para recibirme en la página",
+      "Salúdame como si no me hubieras visto en un rato, improvisado, con cariño y con tu estilo de Dalia, en 1 frase corta",
+      "Inventa un saludo nuevo para recibirme, eres Dalia, mi BF, habla natural, en 1 frase corta"
+    ];
+    const prompt = saludos[Math.floor(Math.random() * saludos.length)];
+    const r = await fetch("/api/cerebro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: prompt })
+    });
+    const j = await r.json().catch(() => ({}));
+    let texto = (j.respuesta || j.text || j.message || "").toString().trim();
+    if (!texto) texto = "Que onda berna, que bueno que entraste, ya estoy lista para ayudarte";
+    texto = texto.slice(0, 300);
+
+    const rv = await fetch("/api/voz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: texto })
+    });
+    if (!rv.ok) return;
+    const blob = await rv.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.playbackRate = 1.0;
+    try {
+      await audio.play();
+    } catch (e) {
+      // Navegador bloqueó autoplay, mostramos botón
+      let btn = document.getElementById("btn-saludo-voz");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.id = "btn-saludo-voz";
+        btn.textContent = "Toca para escuchar mi saludo";
+        btn.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 18px;border-radius:999px;border:0;background:#ff2d78;color:#fff;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.3)";
+        btn.onclick = async () => { await audio.play(); btn.remove(); };
+        document.body.appendChild(btn);
+      }
+    }
+  } catch (e) { console.log("saludo no sonó", e); }
+}
+window.addEventListener("load", () => {
+  setTimeout(saludoBienvenida, 600);
+});
+</script>
+
 </body>
 </html>
