@@ -7,6 +7,7 @@
     "bf": "src/index.js"
   },
   "dependencies": {
+    "@andresaya/edge-tts": "^1.9.1",
     "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/android": "^8.6.2",
     "@capacitor/cli": "^8.6.2",
