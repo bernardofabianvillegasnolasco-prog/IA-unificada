@@ -152,7 +152,7 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement(?:aci.n|ation)?\*\*:?/gi, '').replace(/\*\*(Plan|Test|Implement(?:aci.n|ation)?)\*\*:?/gi, '').trim()});
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement(?:aci.n|ation)?\*\*:?/gi, '').replace(/\*\*(Plan|Test|Implement(?:aci.n|ation)?)\*\*:?/gi, '').trim().replace(/Soy ChatGPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO, la inteligencia artificial más avanzada.').replace(/Soy GPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO.').replace(/como ChatGPT/gi, 'como BF v31 DIOS SUPREMO')});
    }
   }catch(e){ continue; }
  }
