@@ -21,6 +21,7 @@ export default async function handler(req, res){
   res.setHeader('Access-Control-Allow-Origin','*');
   if(req.method==='OPTIONS') return res.status(200).end();
   const ip = getIP(req);
+  try { limpiarMemoriaCorrectaBF(MEM); } catch(_) {}
   const id = 'ip-' + ip;
   const tieneRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
   if(req.method==='GET'){
@@ -43,7 +44,7 @@ export default async function handler(req, res){
 
 
 // BF TTL: limpia memoria vieja cada 1 hora
-const TTL_MS = 1000 * 60 * 60 * 24; // 24h
+const TTL_MS = 1000 * 60 * 60 * 24; // 24h - unificado con TTL_CORRECTO_BF
 let _ultimaLimpieza = 0;
 export function limpiarMemoriaVieja(MEM) {
   const ahora = Date.now();

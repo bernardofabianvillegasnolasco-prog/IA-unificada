@@ -28,9 +28,10 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:\;");
-  res.setHeader("X-XSS-Protection", "1\; mode=block");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -38,11 +39,13 @@ export default async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const texto = limpiar(body.texto || body.prompt || body.text || "");
     const key = crypto.createHash("sha256").update(texto).digest("hex");
-    if (CACHE.has(key)) {
+    let cached = CACHE.get(key) || null;
+    if (!cached) { try { cached = await redisGetBF(key); if (cached) { CACHE.set(key, cached); CACHE_BYTES += cached.length; } } catch(_) {} }
+    if (cached) {
       res.setHeader("Content-Type", "audio/mpeg");
       res.setHeader("Cache-Control", "public, max-age=86400");
       res.setHeader("X-BF-Cache", "HIT");
-      return res.status(200).send(CACHE.get(key));
+      return res.status(200).send(cached);
     }
     const tts = new EdgeTTS();
     await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
