@@ -403,7 +403,7 @@ window.addEventListener('load', ()=>{ setTimeout(pedirPermisosBF, 800); });
 </script>
 
 <script>
-async function saludoBienvenida() {
+async function saludoBienvenida() { return; // desactivado
   try {
     const texto = "Viniendo, hazme una pregunta";
     const rv = await fetch("/api/voz", {
@@ -431,9 +431,7 @@ async function saludoBienvenida() {
     }
   } catch (e) { console.log("saludo no sonó", e); }
 }
-window.addEventListener("load", () => {
-  setTimeout(saludoBienvenida, 600);
-});
+// saludo al entrar desactivado - solo habla cuando le preguntas
 </script>
 
 </body>
