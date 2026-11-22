@@ -113,24 +113,12 @@ export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Headers","Content-Type");
  if(req.method==="OPTIONS") return res.status(200).end();
  const {prompt, historial=[], skill, agent} = req.body||{};
- if(!prompt) let textoLimpioBF = text || "";
-  textoLimpioBF = textoLimpioBF.replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement\*\*:?/gi, "");
-  textoLimpioBF = textoLimpioBF.replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, "").trim();
-  text = textoLimpioBF || text;
-  return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
+ if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
  const geminiKey = (process.env.GEMINI_API_KEY||"").trim();
- if(!key) let textoLimpioBF = text || "";
-  textoLimpioBF = textoLimpioBF.replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement\*\*:?/gi, "");
-  textoLimpioBF = textoLimpioBF.replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, "").trim();
-  text = textoLimpioBF || text;
-  return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel"});
+ if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel"});
  const hookBloqueo = hookPre(prompt);
- if(hookBloqueo) let textoLimpioBF = text || "";
-  textoLimpioBF = textoLimpioBF.replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement\*\*:?/gi, "");
-  textoLimpioBF = textoLimpioBF.replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, "").trim();
-  text = textoLimpioBF || text;
-  return res.status(200).json({cerebro:"BF x13 + AgentShield HOOK PRE", text:hookBloqueo});
+ if(hookBloqueo) return res.status(200).json({cerebro:"BF x13 + AgentShield HOOK PRE", text:hookBloqueo});
  const skillUsar = skill || detectarSkill(prompt);
  const skillTexto = cargarSkill(skillUsar);
  const agenteUsar = agent || detectarAgente(prompt);
@@ -164,17 +152,9 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    let textoLimpioBF = text || "";
-  textoLimpioBF = textoLimpioBF.replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement\*\*:?/gi, "");
-  textoLimpioBF = textoLimpioBF.replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, "").trim();
-  text = textoLimpioBF || text;
-  return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content)});
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:[\s\S]*?\*\*Implement\*\*:/gi, '').replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, '').trim()});
    }
   }catch(e){ continue; }
  }
- let textoLimpioBF = text || "";
-  textoLimpioBF = textoLimpioBF.replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement\*\*:?/gi, "");
-  textoLimpioBF = textoLimpioBF.replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, "").trim();
-  text = textoLimpioBF || text;
-  return res.status(200).json({cerebro:"BF x13 Fallback", text:"Groq no respondio. Revisa tu key"});
+ return res.status(200).json({cerebro:"BF x13 Fallback", text:"Groq no respondio. Revisa tu key"});
 }
