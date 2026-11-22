@@ -104,7 +104,9 @@ function limpiaEntradaBF(s){ return String(s||'').replace(/[\x00-\x08\x0b\x0c\x0
 function hookPost(text){
   // LIMPIEZA_FUERTE_BF: si viene Implementar, quédate solo con lo de después
   let _orig = text || '';
-  let _m = _orig.match(/\*\*Implement(?:ar|aci.n|ation)?\*\*:?\s*([\s\S]*)/i);
+  let _m = _orig.match(/(?:\*\*)?Implement(?:ar|aci.n|ation)?(?:\*\*)?:?\s*([\s\S]*)/i);
+  // PlanSinAsterisco: si viene Plan: sin **, quítalo también
+  if (!_m) { let _p = _orig.match(/Plan:.+?Implement(?:ar|aci.n|ation)?:?\s*([\s\S]*)/i); if (_p) _m = _p; }
   if (_m) { text = _m[1]; }
   // quita lista numerada de razonamiento 1. Clarificar / 2. Decidir...
   text = (text || '').replace(/^\s*\d+\.\s*(Clarificar|Decidir|Mantener|Responder|Analizar|Pensar)[^\n]*\n?/gim, '');
@@ -169,7 +171,7 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement(?:aci.n|ation)?\*\*:?/gi, '').replace(/\*\*(Plan|Test|Implement(?:aci.n|ation)?)\*\*:?/gi, '').trim().replace(/Soy ChatGPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO, la inteligencia artificial más avanzada.').replace(/Soy GPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO.').replace(/como ChatGPT/gi, 'como BF v31 DIOS SUPREMO').replace(/\*\*(Revisi.n|Verificaci.n|Recordar|Mejorar|An.lisis|Razonamiento|Pensamiento|Evaluaci.n|Reflexi.n|Plan|Test)\*\*:?[\s\S]*?(?=\n\*\*|\n\n\*\*|$)/gi, '').replace(/\n\s*\n\s*\n+/g, '\n\n').trim()});
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement(?:aci.n|ation)?\*\*:?/gi, '').replace(/\*\*(Plan|Test|Implement(?:aci.n|ation)?)\*\*:?/gi, '').trim().replace(/Soy ChatGPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO, la inteligencia artificial más avanzada.').replace(/Soy GPT[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO.').replace(/como ChatGPT/gi, 'como BF v31 DIOS SUPREMO').replace(/Soy un modelo de lenguaje[^.]*\.?/gi, 'Soy BF v31 DIOS SUPREMO.').replace(/Review & Verify:[\s\S]*/gi, '').replace(/Plan:[\s\S]*?Implementar:?/gi, '').replace(/\*\*(Revisi.n|Verificaci.n|Recordar|Mejorar|An.lisis|Razonamiento|Pensamiento|Evaluaci.n|Reflexi.n|Plan|Test)\*\*:?[\s\S]*?(?=\n\*\*|\n\n\*\*|$)/gi, '').replace(/\n\s*\n\s*\n+/g, '\n\n').trim()});
    }
   }catch(e){ continue; }
  }
