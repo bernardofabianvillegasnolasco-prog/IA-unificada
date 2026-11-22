@@ -100,6 +100,7 @@ function hookPre(prompt){
  if(/password\s*=\s*["'][^"']+["']/i.test(prompt||"")) return "HOOK PRE BLOQUEADO: parece que pegaste una password";
  return "";
 }
+function limpiaEntradaBF(s){ return String(s||'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').slice(0,2000); }
 function hookPost(text){
   // LIMPIEZA_FUERTE_BF: si viene Implementar, quédate solo con lo de después
   let _orig = text || '';
@@ -118,6 +119,9 @@ function hookPost(text){
 }
 export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Origin","*");
+  res.setHeader("X-Content-Type-Options","nosniff");
+  res.setHeader("X-Frame-Options","DENY");
+  res.setHeader("Referrer-Policy","no-referrer");
  res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
  res.setHeader("Access-Control-Allow-Headers","Content-Type");
  if(req.method==="OPTIONS") return res.status(200).end();

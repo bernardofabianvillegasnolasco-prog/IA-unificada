@@ -20,6 +20,9 @@ function logBF(nivel, msg, extra = {}) { console.log(JSON.stringify({ ts: new Da
 export default async function handler(req, res) {
   const reqId = Math.random().toString(36).slice(2, 8);
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
