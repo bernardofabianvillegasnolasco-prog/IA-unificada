@@ -76,7 +76,15 @@ document.getElementById('optCerrar').onclick=()=>panel.classList.remove('show');
 let historial=JSON.parse(localStorage.getItem('bf_v4_hist')||'[]');
 let perfilBF=JSON.parse(localStorage.getItem('bf_perfil')||'{}');
 function guardarPerfil(){localStorage.setItem('bf_perfil', JSON.stringify(perfilBF));}
-function actualizarPerfilDesdeTexto(texto){ const low=texto.toLowerCase(); let cambio=false; const m1=texto.match(/me llamo|mi nombre es\s+([A-Za-zÁÉÍÓÚáéíóú]+)/i); if(m1){perfilBF.nombre=m1[1]; cambio=true;} const m2=texto.match(/me gusta (la |el |los )?(.+)/i); if(m2){perfilBF.gustos=[...(perfilBF.gustos||[]), m2[2].trim()].slice(-10); cambio=true;} if(/estoy triste|me siento mal/i.test(low)){perfilBF.estado='triste'; cambio=true;} if(/estoy feliz|estoy bien/i.test(low)){perfilBF.estado='feliz'; cambio=true;} if(cambio) guardarPerfil(); }
+function actualizarPerfilDesdeTexto(texto){ const low=(texto||'').toLowerCase(); let cambio=false;
+  const m1=texto.match(/(?:me llamo|mi nombre es)\s+([A-Za-zÁÉÍÓÚáéíóú]+)/i); if(m1 && m1[1]){perfilBF.nombre=m1[1]; cambio=true;}
+  const m2=texto.match(/me gusta (la |el |los )?(.+)/i); if(m2 && m2[2]){perfilBF.gustos=[...(perfilBF.gustos||[]), m2[2].trim()].slice(-10); cambio=true;}
+  const m3=texto.match(/estoy (?:trabajando en|haciendo|en)\s+(.+)/i); if(m3 && m3[1]){perfilBF.proyecto_actual=m3[1].trim().slice(0,80); perfilBF.ultimo_tema=m3[1].trim().slice(0,80); cambio=true;}
+  if(/háblame coqueta|modo coqueta|más coqueta/i.test(low)){perfilBF.estilo_voz='coqueta'; cambio=true;}
+  if(/háblame normal|modo normal|háblame serio/i.test(low)){perfilBF.estilo_voz='normal'; cambio=true;}
+  if(/estoy triste|me siento mal/i.test(low)){perfilBF.estado='triste'; cambio=true;}
+  if(/estoy feliz|estoy bien/i.test(low)){perfilBF.estado='feliz'; cambio=true;}
+  if(cambio) guardarPerfil(); }
 let vozActiva=localStorage.getItem('bf_voz')!=='off';
 let voces=[];function cargarVoces(){voces=[];}speechSynthesis.onvoiceschanged=cargarVoces;cargarVoces();setTimeout(cargarVoces,500);
 function limpiarParaVoz(t){if(!t) return t; let s=String(t); s=s.split('*').join(' ').split('#').join(' ').split('_').join(' ').split('`').join(' '); let malas=['asterisco','asteriscos','guion','guiones','slash','diagonal','barra','parentesis','paréntesis','corchete','llave','comillas','numeral','almohadilla','arroba','porcentaje','ampersand']; let palabras=s.split(' '); palabras=palabras.filter(function(w){return malas.indexOf(w.toLowerCase())===-1;}); s=palabras.join(' '); s=s.split(/\s+/).join(' ').trim(); return s;}
