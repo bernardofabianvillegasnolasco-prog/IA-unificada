@@ -405,11 +405,11 @@ window.addEventListener('load', ()=>{ setTimeout(pedirPermisosBF, 800); });
 <script>
 async function saludoBienvenida() {
   try {
-    const saludos = [
-      "Salúdame improvisado, como si fueras Dalia, mi BF, contenta de verme entrar, en 1 frase corta, sin decir asterisco ni símbolos",
-      "Dame un saludo improvisado diferente, cálido y con tu estilo, como Dalia, en 1 frase corta para recibirme en la página",
-      "Salúdame como si no me hubieras visto en un rato, improvisado, con cariño y con tu estilo de Dalia, en 1 frase corta",
-      "Inventa un saludo nuevo para recibirme, eres Dalia, mi BF, habla natural, en 1 frase corta"
+        const saludos = [
+      "Dame un saludo formal y respetuoso para recibir al usuario al entrar a la página, en 1 frase corta, profesional, sin palabras de cariño ni románticas",
+      "Saluda de forma formal al usuario que acaba de entrar, como asistente profesional, en 1 frase corta, cortés y seria",
+      "Genera un saludo formal diferente para dar la bienvenida al usuario, tono profesional y respetuoso, en 1 frase corta, sin apodos cariñosos",
+      "Dame una bienvenida formal e improvisada para el usuario, tono de asistente profesional, en 1 frase corta"
     ];
     const prompt = saludos[Math.floor(Math.random() * saludos.length)];
     const r = await fetch("/api/cerebro", {
