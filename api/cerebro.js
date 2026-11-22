@@ -1,5 +1,6 @@
 let _CACHE_SKILLS = null;
 function getSkillsCache() { if (_CACHE_SKILLS) return _CACHE_SKILLS; try { _CACHE_SKILLS = {}; } catch(e) { _CACHE_SKILLS = {}; } return _CACHE_SKILLS; }
+import LRU from "lru-cache";
 import fs from "fs";
 import path from "path";
 
@@ -12,15 +13,15 @@ const PATRONES_PELIGROSOS = [
 ];
 
 // BF RATE-LIMIT + SANITIZAR - mejora 2
-const RATE_LIMIT_BF = new Map();
+const RATE_LIMIT_BF = new LRU({ max: 500, ttl: 60 * 1000 }); // 500 IPs, 60s, se limpia solo
 function rateLimitBF(req) {
   const ip = req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket?.remoteAddress || "anon";
   const ahora = Date.now();
-  const ventana = 60 * 1000; const max = 30; // 30 req por minuto por IP
-  let arr = (RATE_LIMIT_BF.get(ip) || []).filter(ts => ahora - ts < ventana);
+  const max = 30;
+  let arr = RATE_LIMIT_BF.get(ip) || [];
+  arr = arr.filter(ts => ahora - ts < 60 * 1000);
   arr.push(ahora);
   RATE_LIMIT_BF.set(ip, arr);
-  if (RATE_LIMIT_BF.size > 500) { const k = RATE_LIMIT_BF.keys().next().value; RATE_LIMIT_BF.delete(k); }
   return arr.length <= max;
 }
 function sanitizarBF(s) {

@@ -1,269 +1,238 @@
-# MEJORAS - 21/11/2026, 10:01:04 p.m.
+# MEJORAS - 21/11/2026, 10:10:08 p.m.
 
-## 5 mejoras concretas (ordenadas por impacto)
-
-| # | Área / Archivo | Impacto | Riesgo* |
-|---|----------------|---------|---------|
-| 1 | **`api/voz.js` – Cache HTTP + Edge‑Cache** | Alto – Reduce tiempo de respuesta y consumo de Edge‑TTS (costo) | **Bajo** |
-| 2 | **`api/cerebro.js` – Sanitización + Rate‑limit** | Alto – Evita filtraciones de claves y ataques de fuerza bruta | **Medio** |
-| 3 | **`api/memoria.js` – TTL correcto + uso de Redis expiración** | Alto – Libera memoria y evita que datos obsoletos se sirvan | **Bajo** |
-| 4 | **`api/*` – Migrar a **Edge Runtime** de Vercel** | Medio – Latencia menor y escala automática | **Bajo** |
-| 5 | **`api/voz.js` – Manejo de errores y logs estructurados** | Medio – Depuración más fácil y evita respuestas “ciegas” | **Bajo** |
-
-\*Riesgo: **Bajo** = cambio aislado, sin romper dependencias. **Medio** = implica lógica nueva que debe probarse con casos de uso reales.
-
----
-
-### 1️⃣ `api/voz.js` – Cache HTTP + Edge‑Cache
-
+## Mejora 1 – **Rate‑limit con respuesta clara y sin fuga de memoria**  
 **Problema**  
-* Cuando el audio está en caché se envía `Cache‑Control: public, max‑age=86400`, pero el **miss** usa `no-store`. Cada petición miss vuelve a generar TTS aunque el mismo texto pueda ser reutilizado por la CDN de Vercel (edge‑cache).  
+`cerebro.js` usa un `Map` en memoria (`RATE_LIMIT_BF`) para contar peticiones por IP.  
+- No devuelve **429 Too Many Requests** cuando se supera el límite.  
+- La estructura crece indefinidamente (solo se elimina una clave cuando supera 500).  
+- En entornos serverless (Vercel Edge) la memoria se reinicia en cada invocación, por lo que el límite es inefectivo.  
 
 **Qué cambiar**  
-* Para los **miss** enviar un `Cache‑Control` que permita a la CDN almacenar el recurso (ej. `public, max‑age=86400, stale‑while‑revalidate=3600`).  
-* Añadir la cabecera `Vary: Accept-Encoding` para que la CDN respete la compresión.  
+Utilizar la librería ligera **`lru-cache`** (compatible con Edge) y devolver 429 cuando el límite se exceda.  
 
-**Código exacto** (reemplaza la sección que envía la respuesta *miss*):
-
-```js
-// ... después de generar `buffer`
-res.setHeader("Content-Type", "audio/mpeg");
-res.setHeader(
-  "Cache-Control",
-  "public, max-age=86400, stale-while-revalidate=3600"
-);
-res.setHeader("Vary", "Accept-Encoding");
-res.setHeader("X-BF-Cache", "MISS");
-return res.status(200).send(buffer);
-```
-
-**Riesgo**  
-Bajo – Sólo se modifican cabeceras; la lógica de caché en memoria sigue igual.
-
----
-
-### 2️⃣ `api/cerebro.js` – Sanitización + Rate‑limit
-
-**Problema**  
-* La lista `PATRONES_PELIGROSOS` cubre algunos casos, pero es estática y fácil de evadir.  
-* No hay control de frecuencia de peticiones, lo que permite ataques de fuerza bruta para descubrir prompts o claves.
-
-**Qué cambiar**  
-
-1. **Sanitización centralizada** – crear una función `sanitizarPrompt` que:
-   * Normaliza a minúsculas.
-   * Elimina cualquier cadena que coincida con expresiones regulares de secretos (`/g(sk|sk_)?[A-Za-z0-9_-]{10,}/`, `/ghp_[A-Za-z0-9]{10,}/`, etc.).
-   * Reemplaza coincidencias con `[SECRETO BLOQUEADO]`.
-
-2. **Rate‑limit** – usar el paquete `lru-cache` (ya incluido en Node) para limitar a **30 peticiones / IP / minuto**.
-
-**Código exacto**
+**Código a pegar (en `api/cerebro.js` – sustituir la sección de rate‑limit)**  
 
 ```js
-// ---------- al inicio del archivo ----------
+// ----------  NUEVO IMPORT ----------
 import LRU from "lru-cache";
 
+// ----------  CONFIGURACIÓN ----------
 const rateLimiter = new LRU({
-  max: 1000,               // máximo número de IPs guardadas
-  ttl: 60 * 1000,          // 1 minuto
+  max: 10_000,                     // máximo de IPs guardadas
+  ttl: 60_000,                     // 1 minuto de vida de cada registro
+  updateAgeOnGet: true,            // refresca TTL al leer
+  allowStale: false,
+});
+
+// ----------  FUNCIÓN DE LIMITE ----------
+function rateLimitBF(req) {
+  const ip =
+    req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "anon";
+
+  const now = Date.now();
+  const record = rateLimiter.get(ip) ?? { count: 0, first: now };
+
+  // Si la ventana expiró, reiniciamos
+  if (now - record.first > 60_000) {
+    record.count = 0;
+    record.first = now;
+  }
+
+  record.count += 1;
+  rateLimiter.set(ip, record);
+
+  // 30 peticiones por minuto → 429 si supera
+  return record.count <= 30;
+}
+
+// ----------  USO EN EL HANDLER ----------
+export default async function handler(req, res) {
+  // …cabezeras CORS…
+
+  if (!rateLimitBF(req)) {
+    return res
+      .status(429)
+      .json({ ok: false, error: "Demasiadas peticiones, intenta más tarde." });
+  }
+
+  // resto del código …
+}
+```
+
+**Riesgo**: **bajo**. Solo se añade una dependencia (`lru-cache`) y se cambia la lógica interna; no afecta la funcionalidad existente, solo mejora la protección contra abuso.
+
+---
+
+## Mejora 2 – **Cache LRU para audio TTS y persistencia opcional**  
+**Problema**  
+`voz.js` mantiene un `Map` simple (`CACHE`) con capacidad fija (`MAX_CACHE = 50`).  
+- No hay política LRU real (se elimina la *primera* clave insertada, no la menos usada).  
+- La caché desaparece en cada despliegue/reinicio de la función.  
+
+**Qué cambiar**  
+Reemplazar el `Map` por `lru-cache` con TTL y, opcionalmente, almacenar los buffers en **Vercel KV** (o cualquier store) para que sobrevivan a reinicios.  
+
+**Código a pegar (en `api/voz.js`)**  
+
+```js
+// ----------  NUEVO IMPORT ----------
+import LRU from "lru-cache";
+
+// ----------  CONFIGURACIÓN ----------
+const CACHE = new LRU({
+  max: 100,                     // número máximo de audios en memoria
+  ttl: 24 * 60 * 60 * 1000,     // 24 h de vida
   updateAgeOnGet: true,
 });
 
-function checkRate(ip) {
-  const count = rateLimiter.get(ip) || 0;
-  if (count >= 30) return false; // bloqueado
-  rateLimiter.set(ip, count + 1);
-  return true;
+// ----------  FUNCIÓN DE GUARDADO ----------
+function setCache(key, buffer) {
+  CACHE.set(key, buffer);
+  // ---- Persistencia opcional en Vercel KV (descomentar si se habilita) ----
+  // if (process.env.KV_URL && process.env.KV_TOKEN) {
+  //   fetch(`${process.env.KV_URL}/set/${key}`, {
+  //     method: "POST",
+  //     headers: { Authorization: `Bearer ${process.env.KV_TOKEN}` },
+  //     body: buffer,
+  //   }).catch(() => {}); // fallas silenciosas
+  // }
 }
 
-// ---------- sanitización ----------
-const SECRET_REGEX = [
-  /g(sk|sk_)?[A-Za-z0-9_-]{10,}/gi,
-  /ghp_[A-Za-z0-9]{10,}/gi,
-  /sk-proj-[A-Za-z0-9_-]{10,}/gi,
-];
-
-function sanitizarPrompt(texto) {
-  let s = String(texto || "").toLowerCase();
-  // bloqueos rápidos
-  if (esPeligroso(s)) return null; // ya está bloqueado por la lista antigua
-  // ocultar secretos
-  for (const rx of SECRET_REGEX) {
-    s = s.replace(rx, "[SECRETO BLOQUEADO]");
-  }
-  return s;
+// ----------  REEMPLAZAR LA LÓGICA DE CACHE ----------
+if (CACHE.has(key)) {
+  const cached = CACHE.get(key);
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+  res.setHeader("X-BF-Cache", "HIT");
+  return res.status(200).send(cached);
 }
-```
 
-Luego, dentro del `handler` (antes de procesar el prompt):
-
-```js
-export default async function handler(req, res) {
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0] ?? "unknown";
-
-  if (!checkRate(ip)) {
-    return res
-      .status(429)
-      .json({ ok: false, error: "Demasiadas peticiones, intente más tarde." });
-  }
-
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-  const prompt = sanitizarPrompt(body.prompt || body.text || "");
-  if (prompt === null) {
-    return res.status(400).json({ ok: false, error: "Prompt bloqueado por contenido sensible." });
-  }
-
-  // … resto del código usando `prompt` …
+// … después de generar el buffer …
+if (buffer && buffer.length) {
+  setCache(key, buffer);
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+  res.setHeader("X-BF-Cache", "MISS");
+  return res.status(200).send(buffer);
 }
 ```
 
-**Riesgo**  
-Medio – Introduce lógica de control de tráfico; se debe probar que no se bloqueen falsos positivos en usuarios legítimos.
+**Riesgo**: **medio**. Cambia la forma de almacenar la caché; si se habilita la persistencia en KV se debe crear la variable de entorno correspondiente. Sin KV, la lógica sigue funcionando como antes pero con mejor política de expulsión.
 
 ---
 
-### 3️⃣ `api/memoria.js` – TTL correcto + expiración en Redis
-
+## Mejora 3 – **TTL y timestamp correcto en la memoria de usuarios**  
 **Problema**  
-* La función `limpiarMemoriaVieja` busca una propiedad `_ts` que nunca se escribe, por lo que la limpieza nunca ocurre.  
-* Cuando se usa Upstash Redis se guarda el objeto sin expiración, lo que genera datos “zombies”.
+`memoria.js` define `TTL_MS = 1000 * 60 * 60 * 24` (24 h) pero nunca asigna `_ts` a los objetos guardados, por lo que la limpieza nunca elimina datos viejos. Además, la función `limpiarMemoriaCorrectaBF` no se invoca.  
 
 **Qué cambiar**  
+- Añadir `_ts` (timestamp de última actualización) al guardar.  
+- Ejecutar `limpiarMemoriaCorrectaBF(MEM)` al inicio de cada petición GET/POST.  
 
-1. **Guardar timestamp** (`_ts`) al crear/actualizar la memoria.  
-2. **Usar la API de Redis `EX`** para que el propio Redis elimine la clave después de `TTL_MS`.  
-3. **Eliminar la función `limpiarMemoriaVieja`** (ya no necesaria) o dejarla sólo para la caché en‑memoria.
-
-**Código exacto**
+**Código a pegar (en `api/memoria.js`)**  
 
 ```js
-// ---------- constantes ----------
-const TTL_MS = 1000 * 60 * 60 * 24; // 24h
-const TTL_SECONDS = Math.floor(TTL_MS / 1000);
-
-// ---------- POST ----------
+// ----------  AÑADIR TIMESTAMP ----------
 if (req.method === "POST") {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-  const ahora = new Date().toISOString();
-
-  const actual = tieneRedis
-    ? (await leerRedis(id)) || MEM[id] || {}
-    : MEM[id] || {};
-
+  const actual = tieneRedis ? (await leerRedis(id) || MEM[id] || {}) : (MEM[id] || {});
   const nueva = {
     ...actual,
     ...body,
-    actualizado: ahora,
-    _ts: Date.now(),          // <-- timestamp para la caché en‑memoria
+    actualizado: new Date().toISOString(),
+    _ts: Date.now(),               // <-- nuevo campo
   };
-
   MEM[id] = nueva;
-
-  if (tieneRedis) {
-    // Guardar con expiración en Redis
-    await fetch(
-      `${process.env.UPSTASH_REDIS_REST_URL}/set/${id}/${encodeURIComponent(
-        JSON.stringify(nueva)
-      )}?EX=${TTL_SECONDS}`,
-      { headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
-    );
-  }
-
+  if (tieneRedis) await guardarRedis(id, nueva);
   return res.status(200).json({ ok: true, memoria: nueva, ip, guardado: tieneRedis ? "redis" : "memoria-temporal" });
 }
-```
 
-*Opcional*: eliminar `limpiarMemoriaVieja` o dejarla solo para `MEM` sin TTL:
-
-```js
-export function limpiarMemoriaVieja() {
-  const ahora = Date.now();
-  for (const k of Object.keys(MEM)) {
-    const v = MEM[k];
-    if (v && v._ts && ahora - v._ts > TTL_MS) delete MEM[k];
-  }
+// ----------  LIMPIAR ANTES DE LEER ----------
+if (req.method === "GET") {
+  // Elimina entradas expiradas antes de servir
+  limpiarMemoriaCorrectaBF(MEM);
+  // … resto del código …
 }
 ```
 
-**Riesgo**  
-Bajo – Solo se añaden campos y se usa la opción `EX` de Redis, que es compatible con Upstash.
+**Riesgo**: **bajo**. Solo se añaden campos al objeto y se llama a una función ya existente; no rompe la lógica actual y mejora la gestión de datos obsoletos.
 
 ---
 
-### 4️⃣ `api/*` – Migrar a **Edge Runtime** de Vercel
-
+## Mejora 4 – **Sanitización robusta con `validator`**  
 **Problema**  
-* Actualmente los endpoints se ejecutan como **Node.js Serverless Functions**. En Vercel, los Edge Functions son más rápidos (latencia ~1‑2 ms) y pueden usar `fetch` sin polyfills.
+`sanitizarBF` elimina HTML y caracteres nulos, pero no protege contra **XSS** ni contra inyección de comandos en prompts que luego se envían a LLMs.  
 
 **Qué cambiar**  
-* Añadir `export const config = { runtime: "edge" };` al final de cada archivo API.  
-* Reemplazar `node-fetch` por la API nativa `fetch` (ya está usado en `memoria.js`).  
-* Eliminar dependencias que no funcionan en Edge (por ejemplo, `fs` no está disponible). En `cerebro.js` y `memoria.js` el acceso a disco es solo para leer *skills* y *agents*; esos archivos pueden pre‑cargar en tiempo de build y exportarse como JSON estático (pero para la mejora mínima solo añadimos la configuración; la funcionalidad seguirá funcionando en Node‑JS cuando Vercel lo necesite).
+Usar la librería **`validator`** (ya ligera) para escapar caracteres peligrosos y limitar la longitud.  
 
-**Código exacto** (añadir al final de cada archivo `api/*.js`):
+**Código a pegar (en `api/cerebro.js`)**  
 
 ```js
-export const config = {
-  runtime: "edge",          // <-- ejecuta en la red de Vercel
-  // opcional: permite body parsing sin límite
-  // maxDuration: 10,       // segundos (si se necesita más tiempo)
-};
-```
+// ----------  NUEVO IMPORT ----------
+import validator from "validator";
 
-**Riesgo**  
-Bajo – Edge Runtime es compatible con la mayoría del código (no usa `fs` en tiempo de ejecución). Si alguna librería falla, Vercel automáticamente cae a la versión Node, por lo que el despliegue no se rompe.
-
----
-
-### 5️⃣ `api/voz.js` – Manejo de errores y logs estructurados
-
-**Problema**  
-* En caso de error de `EdgeTTS` se devuelve directamente el mensaje crudo (`String(e)`). No hay trazas en los logs de Vercel y el cliente no recibe información útil (p.ej., “rate‑limit excedido”).
-
-**Qué cambiar**  
-* Envolver la llamada a `tts.synthesize` en `try/catch` y registrar el error con `console.error` (Vercel captura los logs).  
-* Normalizar la respuesta de error con un código HTTP apropiado (429 para rate‑limit, 500 para fallos internos).
-
-**Código exacto** (reemplaza el bloque dentro de `handler` donde se llama a `tts`):
-
-```js
-try {
-  await tts.synthesize(texto, "es-MX-DaliaNeural", {
-    rate: "5%",
-    pitch: "+10Hz",
-  });
-} catch (err) {
-  console.error("[VOICE] Error en EdgeTTS:", {
-    mensaje: err.message,
-    stack: err.stack,
-    texto,
-  });
-
-  // Si el error proviene de rate‑limit de Azure, devolver 429
-  if (/429|rate limit/i.test(err.message)) {
-    return res.status(429).json({ ok: false, error: "Demasiadas peticiones al motor TTS, intente más tarde." });
-  }
-
-  return res.status(500).json({ ok: false, error: "Fallo interno al generar audio." });
+// ----------  REEMPLAZAR sanitizarBF ----------
+function sanitizarBF(s) {
+  let x = String(s || "").slice(0, 4000);
+  // Elimina cualquier etiqueta HTML y escapa caracteres especiales
+  x = validator.escape(x);               // &amp; &lt; &gt; etc.
+  x = validator.stripLow(x, true);       // quita caracteres de control
+  // Opcional: permite solo caracteres imprimibles
+  x = x.replace(/[^\x20-\x7EáéíóúÁÉÍÓÚñÑüÜ]/g, " ");
+  return x.trim();
 }
 ```
 
-**Riesgo**  
-Bajo – Solo se añade manejo de excepción y logging; la lógica principal no cambia.
+**Riesgo**: **bajo‑medio**. Cambia la forma de limpiar el texto; `validator.escape` convierte `<` en `&lt;`, lo que puede afectar prompts que necesiten esos símbolos (p. ej., código). Si se necesita preservar símbolos, ajustar la expresión regular o usar `validator.blacklist` en su lugar.
 
 ---
 
-## Resumen rápido de los cambios
+## Mejora 5 – **Eliminar dependencias duplicadas y optimizar el bundle**  
+**Problema**  
+`package.json` incluye tanto `@andresaya/edge-tts` (versión ^1.9.1) como `edge-tts` (^1.0.1). Ambas exportan la misma API y pueden generar **conflictos de versiones** o inflar el bundle.  
 
-| Archivo | Línea aproximada | Cambio |
-|--------|------------------|--------|
-| `api/voz.js` | después de `CACHE.set(key, buffer);` | Cabecera `Cache-Control` pública + `Vary` |
-| `api/voz.js` | alrededor de `await tts.synthesize` | `try/catch` + logs estructurados |
-| `api/cerebro.js` | inicio del archivo | Importar `lru-cache`, crear `rateLimiter`, función `checkRate` |
-| `api/cerebro.js` | antes de procesar prompt | `sanitizarPrompt` + bloqueo de prompts peligrosos |
-| `api/memoria.js` | dentro del `POST` | Guardar `_ts`, usar `?EX=` en la URL de Upstash |
-| `api/memoria.js` | (opcional) eliminar o simplificar `limpiarMemoriaVieja` |
-| `api/*.js` (voz, cerebro, memoria) | final del
+**Qué cambiar**  
+- Mantener solo `@andresaya/edge-tts`.  
+- Desinstalar `edge-tts`.  
+- Actualizar los imports (si alguno usa la ruta sin “@”).  
+
+**Código a pegar (en la raíz del proyecto)**  
+
+```bash
+# 1. Desinstalar la dependencia duplicada
+npm uninstall edge-tts
+
+# 2. Asegurarse de que solo quede la correcta
+npm install @andresaya/edge-tts@latest
+
+# 3. (Opcional) Verificar que no haya imports rotos
+grep -R "from \"edge-tts\"" -n . && echo "¡Hay imports que deben cambiarse!" || echo "Todo OK"
+```
+
+Si se encuentran imports como `import { EdgeTTS } from "edge-tts";`, cambiarlos a:
+
+```js
+import { EdgeTTS } from "@andresaya/edge-tts";
+```
+
+**Riesgo**: **bajo**. Sólo afecta al proceso de instalación y a los imports; no cambia la lógica de la aplicación. Eliminar la versión duplicada reduce el tamaño del despliegue y evita posibles incompatibilidades.
+
+---
+
+### Resumen de impacto (de mayor a menor)
+
+| # | Mejora | Impacto esperado |
+|---|--------|------------------|
+| 1 | Rate‑limit con 429 y LRU | **Alto** – protege contra abuso y evita OOM en producción. |
+| 2 | Cache LRU + TTL para TTS | **Alto** – reduce latencia, ahorra llamadas a Edge‑TTS y controla memoria. |
+| 3 | TTL correcto en memoria de usuarios | **Medio** – evita acumulación indefinida de datos viejos. |
+| 4 | Sanitización con `validator` | **Medio** – refuerza la seguridad contra XSS/inyección. |
+| 5 | Limpieza de dependencias duplicadas | **Bajo** – mejora tamaño del bundle y elimina posibles conflictos. |
+
+Implementa cada bloque de código en los archivos indicados y revisa que los tests (si los hay) pasen antes de desplegar a Vercel. ¡Éxitos!
 
 ---
 Generado por bot-mejora.js

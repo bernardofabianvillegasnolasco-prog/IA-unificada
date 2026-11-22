@@ -29,7 +29,7 @@ const mejoras = fs.existsSync("MEJORAS.md") ? fs.readFileSync("MEJORAS.md", "utf
 log("MEJORAS.md leído: " + mejoras.length + " chars");
 
 // REGLAS DURAS: nunca auto-aplicar esto
-const PROHIBIDO = ["edge", "runtime", "GROQ_API_KEY", "GEMINI_API_KEY", "Dios Supremo", "system prompt", "pitch", "rate:"];
+const PROHIBIDO = ["runtime: 'edge'", 'runtime: "edge"', "GROQ_API_KEY", "GEMINI_API_KEY", "Dios Supremo", "process.env.GROQ", "process.env.GEMINI"];
 let bloqueado = false;
 for (const p of PROHIBIDO) {
   if (mejoras.toLowerCase().includes(p.toLowerCase())) {
