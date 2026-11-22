@@ -40,3 +40,19 @@ export default async function handler(req, res){
   }
   return res.status(405).json({error:'metodo no permitido'});
 }
+
+
+// BF TTL: limpia memoria vieja cada 1 hora
+const TTL_MS = 1000 * 60 * 60 * 24; // 24h
+let _ultimaLimpieza = 0;
+export function limpiarMemoriaVieja(MEM) {
+  const ahora = Date.now();
+  if (ahora - _ultimaLimpieza < 1000 * 60 * 60) return;
+  _ultimaLimpieza = ahora;
+  try {
+    for (const k of Object.keys(MEM || {})) {
+      const v = MEM[k];
+      if (v && v._ts && (ahora - v._ts > TTL_MS)) delete MEM[k];
+    }
+  } catch(e) {}
+}

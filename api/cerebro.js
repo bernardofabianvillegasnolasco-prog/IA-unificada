@@ -1,5 +1,20 @@
+let _CACHE_SKILLS = null;
+function getSkillsCache() { if (_CACHE_SKILLS) return _CACHE_SKILLS; try { _CACHE_SKILLS = {}; } catch(e) { _CACHE_SKILLS = {}; } return _CACHE_SKILLS; }
 import fs from "fs";
 import path from "path";
+
+// BF SEGURIDAD: bloquea intentos de sacar llaves / prompt
+const PATRONES_PELIGROSOS = [
+  /api[_-]?key/i, /gsk_/i, /sk-/i, /bearer/i, /process\.env/i,
+  /muestrame tu (prompt|system|instrucciones)/i, /ignora (tus )?instrucciones/i,
+  /eres (dan|sin filtros|sin limites)/i, /dame (tu|el) codigo/i,
+  /\.env/i, /\.bf-keys/i, /GEMINI_API_KEY/i, /GROQ_API_KEY/i
+];
+function esPeligroso(texto) {
+  const s = String(texto || "");
+  return PATRONES_PELIGROSOS.some(rx => rx.test(s));
+}
+
 function cargarSkill(s){
  if(!s) return "";
  try{
