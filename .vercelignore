@@ -1,0 +1,10 @@
+ecc-skills
+node_modules
+*.md
+*.log
+*.mp3
+test*
+prueba*
+backup*
+PASO2_MEMORIA.md
+PASO3_FALLBACK.md
