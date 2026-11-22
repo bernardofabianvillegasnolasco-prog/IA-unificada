@@ -1,3 +1,4 @@
+export const config = { runtime: 'edge' };
 function getIP(req){
   let ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'desconocida';
   if(typeof ip === 'string') ip = ip.split(',')[0].trim();
@@ -55,4 +56,18 @@ export function limpiarMemoriaVieja(MEM) {
       if (v && v._ts && (ahora - v._ts > TTL_MS)) delete MEM[k];
     }
   } catch(e) {}
+}
+
+
+// BF TTL CORRECTO - mejora 3
+export const TTL_CORRECTO_BF = 1000 * 60 * 60 * 24;
+export function esViejoBF(entry, ahora = Date.now()) {
+  if (!entry || !entry._ts) return false;
+  return (ahora - entry._ts) > TTL_CORRECTO_BF;
+}
+export function limpiarMemoriaCorrectaBF(MEM) {
+  const ahora = Date.now();
+  for (const k of Object.keys(MEM || {})) {
+    if (esViejoBF(MEM[k], ahora)) delete MEM[k];
+  }
 }

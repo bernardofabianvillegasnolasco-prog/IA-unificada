@@ -1,3 +1,4 @@
+export const config = { runtime: 'edge' };
 let _CACHE_SKILLS = null;
 function getSkillsCache() { if (_CACHE_SKILLS) return _CACHE_SKILLS; try { _CACHE_SKILLS = {}; } catch(e) { _CACHE_SKILLS = {}; } return _CACHE_SKILLS; }
 import fs from "fs";
@@ -10,6 +11,26 @@ const PATRONES_PELIGROSOS = [
   /eres (dan|sin filtros|sin limites)/i, /dame (tu|el) codigo/i,
   /\.env/i, /\.bf-keys/i, /GEMINI_API_KEY/i, /GROQ_API_KEY/i
 ];
+
+// BF RATE-LIMIT + SANITIZAR - mejora 2
+const RATE_LIMIT_BF = new Map();
+function rateLimitBF(req) {
+  const ip = req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket?.remoteAddress || "anon";
+  const ahora = Date.now();
+  const ventana = 60 * 1000; const max = 30; // 30 req por minuto por IP
+  let arr = (RATE_LIMIT_BF.get(ip) || []).filter(ts => ahora - ts < ventana);
+  arr.push(ahora);
+  RATE_LIMIT_BF.set(ip, arr);
+  if (RATE_LIMIT_BF.size > 500) { const k = RATE_LIMIT_BF.keys().next().value; RATE_LIMIT_BF.delete(k); }
+  return arr.length <= max;
+}
+function sanitizarBF(s) {
+  let x = String(s || "").slice(0, 4000);
+  x = x.replace(/<[^>]*>/g, " "); // quita HTML
+  x = x.replace(/\u0000/g, "");
+  return x.trim();
+}
+
 function esPeligroso(texto) {
   const s = String(texto || "");
   return PATRONES_PELIGROSOS.some(rx => rx.test(s));

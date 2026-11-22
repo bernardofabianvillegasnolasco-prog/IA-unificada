@@ -13,7 +13,10 @@ function limpiar(texto) {
   return t || "Que onda, soy tu BF, Dalia, ya hablo yo";
 }
 
+function logBF(nivel, msg, extra = {}) { console.log(JSON.stringify({ ts: new Date().toISOString(), nivel, servicio: 'voz', msg, ...extra })); }
+
 export default async function handler(req, res) {
+  const reqId = Math.random().toString(36).slice(2, 8);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -31,14 +34,15 @@ export default async function handler(req, res) {
     const tts = new EdgeTTS();
     await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
     const buffer = tts.toBuffer();
-    if (!buffer || !buffer.length) return res.status(500).json({ ok: false, error: "TTS vacio - toBuffer 0 bytes" });
+    if (!buffer || !buffer.length) { logBF("error", "TTS vacio", { reqId }); return res.status(500).json({ ok: false, error: "TTS vacio - toBuffer 0 bytes", reqId }); }
     if (CACHE.size >= MAX_CACHE) { const primero = CACHE.keys().next().value; CACHE.delete(primero); }
     CACHE.set(key, buffer);
     res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
     res.setHeader("X-BF-Cache", "MISS");
+    res.setHeader("Vary", "Content-Type");
     return res.status(200).send(buffer);
   } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e).slice(0, 300) });
+    logBF("error", "voz fallo", { reqId, error: String(e).slice(0, 200) }); return res.status(500).json({ ok: false, error: String(e).slice(0, 300), reqId });
   }
 }
