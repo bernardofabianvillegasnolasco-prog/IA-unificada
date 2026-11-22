@@ -63,7 +63,7 @@ textarea{width:100%;background:#111;color:#00ff88;border:1px solid #333;border-r
 <div class="DI"><span>IA BF</span></div>
 <div class="sub">IA BF v4.0.39 • Creado por BF Villegas</div>
 <div id="chat"></div>
-<div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
+<div class="box"><textarea id="prompt" rows="2" placeholder="Pregunta"></textarea><button class="btn" id="btnMic">🎤 HABLAR</button><button class="btn" id="btnConversar" style="background:#00aa00">🔁 CONVERSAR</button><button class="btn-3d-responder" id="btnResponder">RESPONDER</button></div>
 
 <div id="version">v4.0.39</div>
 
@@ -436,3 +436,54 @@ async function saludoBienvenida() { return; // desactivado
 
 </body>
 </html>
+
+<script>
+// BF CONVERSAR - loop voz a voz: escucha -> cerebro -> Dalia -> escucha
+let conversandoBF = false;
+let recConversarBF = null;
+async function hablarYEsperarBF(texto){
+  try{
+    const r = await hablarDalia(texto);
+    if(r && r.then) await r;
+    else await new Promise(res=>setTimeout(res, 1500));
+  }catch(e){}
+}
+function escucharUnaVezBF(){
+  return new Promise((res)=>{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ res(""); return; }
+    const rec = new SR(); rec.lang='es-MX'; rec.interimResults=false; rec.maxAlternatives=1;
+    rec.onresult = (e)=>{ try{ res(e.results[0][0].transcript||""); }catch(_){ res(""); } };
+    rec.onerror = ()=>res("");
+    rec.onend = ()=>{};
+    try{ rec.start(); }catch(_){ res(""); }
+    setTimeout(()=>{ try{ rec.stop(); }catch(_){} }, 8000);
+  });
+}
+async function loopConversarBF(){
+  const btn = document.getElementById('btnConversar');
+  if(!btn) return;
+  if(conversandoBF){ conversandoBF=false; btn.textContent='🔁 CONVERSAR'; btn.style.background=''; return; }
+  conversandoBF=true; btn.textContent='⏹️ DETENER'; btn.style.background='#cc0011';
+  await hablarYEsperarBF('Qué onda, berna. Ya te escucho, dime.');
+  while(conversandoBF){
+    const dicho = (await escucharUnaVezBF()).trim();
+    if(!conversandoBF) break;
+    if(!dicho){ continue; }
+    promptEl.value = dicho;
+    // responder pero esperando a que Dalia termine
+    const p = dicho;
+    chatEl.innerHTML='<div class="msg user">'+p+'</div><div class="msg ai" style="opacity:0.6">🧠 Pensando...</div>';
+    try{
+      const r = await fetch('/api/cerebro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({perfil:perfilBF,prompt:p,historial:historial.slice(-100)})});
+      const j = await r.json();
+      historial.push({role:'user',content:p}); historial.push({role:'assistant',content:j.text});
+      renderActual(p, j.text);
+      guardarMemoriaBF();
+      await hablarYEsperarBF(j.text);
+    }catch(e){ renderActual(p,'Error:'+e.message); }
+  }
+  btn.textContent='🔁 CONVERSAR'; btn.style.background='#00aa00';
+}
+document.getElementById('btnConversar').onclick = loopConversarBF;
+</script>
