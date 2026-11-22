@@ -370,7 +370,7 @@ async function hablarSoloDalia(texto){
     // Limpieza final por si se cuela un símbolo
     let limpio = limpiarParaVoz ? limpiarParaVoz(texto) : texto;
     if(audioSoloDalia){ audioSoloDalia.pause(); }
-    const r = await fetch('/api/cerebro?voz=1', {
+    const r = await fetch('/api/voz', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({accion:"voz", texto: limpio})
