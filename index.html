@@ -405,23 +405,7 @@ window.addEventListener('load', ()=>{ setTimeout(pedirPermisosBF, 800); });
 <script>
 async function saludoBienvenida() {
   try {
-            const saludos = [
-      "Dame un saludo fluido y coqueto para recibirme al entrar, estilo Dalia, juguetona y con encanto, en 1 frase corta, sin vulgaridad",
-      "Salúdame con flow, coqueta y con confianza, como Dalia, en 1 frase corta que suene natural y con chispa",
-      "Inventa un saludo coqueto y fluido para darme la bienvenida, tono juguetón y dulce, en 1 frase corta, sin ser vulgar",
-      "Dame una bienvenida coqueta y suave, con flow de Dalia, que suene como si me estuvieras esperando, en 1 frase corta"
-    ];
-    const prompt = saludos[Math.floor(Math.random() * saludos.length)];
-    const r = await fetch("/api/cerebro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: prompt })
-    });
-    const j = await r.json().catch(() => ({}));
-    let texto = (j.respuesta || j.text || j.message || "").toString().trim();
-    if (!texto) texto = "Que onda berna, que bueno que entraste, ya estoy lista para ayudarte";
-    texto = texto.slice(0, 300);
-
+    const texto = "Viniendo, hazme una pregunta";
     const rv = await fetch("/api/voz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -435,12 +419,11 @@ async function saludoBienvenida() {
     try {
       await audio.play();
     } catch (e) {
-      // Navegador bloqueó autoplay, mostramos botón
       let btn = document.getElementById("btn-saludo-voz");
       if (!btn) {
         btn = document.createElement("button");
         btn.id = "btn-saludo-voz";
-        btn.textContent = "Toca para escuchar mi saludo";
+        btn.textContent = "Toca para escuchar";
         btn.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 18px;border-radius:999px;border:0;background:#ff2d78;color:#fff;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.3)";
         btn.onclick = async () => { await audio.play(); btn.remove(); };
         document.body.appendChild(btn);
