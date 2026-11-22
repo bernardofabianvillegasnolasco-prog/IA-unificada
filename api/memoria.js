@@ -1,4 +1,3 @@
-export const config = { runtime: 'edge' };
 function getIP(req){
   let ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'desconocida';
   if(typeof ip === 'string') ip = ip.split(',')[0].trim();

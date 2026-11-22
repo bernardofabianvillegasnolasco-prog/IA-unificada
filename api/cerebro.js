@@ -1,4 +1,3 @@
-export const config = { runtime: 'edge' };
 let _CACHE_SKILLS = null;
 function getSkillsCache() { if (_CACHE_SKILLS) return _CACHE_SKILLS; try { _CACHE_SKILLS = {}; } catch(e) { _CACHE_SKILLS = {}; } return _CACHE_SKILLS; }
 import fs from "fs";
