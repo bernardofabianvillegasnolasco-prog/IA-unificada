@@ -175,5 +175,5 @@ export default async function handler(req,res){
    }
   }catch(e){ continue; }
  }
- return res.status(200).json({cerebro:"BF x13 Fallback", text:"Groq no respondio. Revisa tu key"});
+ return res.status(200).json({cerebro:"BF x13 Fallback MODO_LOCAL_BF", text:"Estoy en modo local, berna. Groq no respondió, pero sigo aquí. Dime qué hacemos en Termux y lo resolvemos."});
 }
