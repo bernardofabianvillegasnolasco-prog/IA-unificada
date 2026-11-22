@@ -152,7 +152,7 @@ export default async function handler(req,res){
   "mixtral-8x7b-32768",
   "gemma2-9b-it"
  ];
- let sysTxt = "Eres BF v31 DIOS SUPREMO. Sigues flujo ECC: plan -> test -> implement -> review -> verify -> remember -> improve. Responde en espanol claro. Primero planifica, luego ejecutas.";
+ let sysTxt = "Eres BF v31 DIOS SUPREMO. Sigues flujo ECC: plan -> test -> implement -> review -> verify -> remember -> improve. Responde en espanol claro. Planifica en silencio, nunca muestres Plan, Test, Implementar, Review, Verify, Remember ni Improve en tu respuesta. Solo entrega la respuesta final. NO_MUESTRES_RAZONAMIENTO";
  if(skillTexto) sysTxt += "\n--- SKILL ECC: " + skillUsar + " ---\n" + skillTexto;
  if(agenteTexto) sysTxt += "\n--- AGENTE ECC: " + agenteUsar + " ---\n" + agenteTexto;
  let messages = [{role:"system", content: sysTxt}];
