@@ -122,11 +122,14 @@ export default async function handler(req,res){
   res.setHeader("X-Content-Type-Options","nosniff");
   res.setHeader("X-Frame-Options","DENY");
   res.setHeader("Referrer-Policy","no-referrer");
+  res.setHeader("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:\;");
+  res.setHeader("X-XSS-Protection","1\; mode=block");
  res.setHeader("Access-Control-Allow-Methods","POST,OPTIONS");
  res.setHeader("Access-Control-Allow-Headers","Content-Type");
  if(req.method==="OPTIONS") return res.status(200).end();
  let {prompt, historial=[], skill, agent} = req.body||{};
   prompt = limpiaEntradaBF(prompt);
+  if (typeof esPeligroso === 'function' && esPeligroso(prompt)) { return res.status(400).json({ok:false, error:'Prompt contiene contenido prohibido'}); }
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
  const geminiKey = (process.env.GEMINI_API_KEY||"").trim();
