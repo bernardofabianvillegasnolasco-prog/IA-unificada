@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const texto = limpiar(body.texto || body.prompt || body.text || "");
     const tts = new EdgeTTS();
-    await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "0%" });
+    await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
     const buffer = tts.toBuffer();
     if (!buffer || !buffer.length) return res.status(500).json({ ok: false, error: "TTS vacio - toBuffer 0 bytes" });
     res.setHeader("Content-Type", "audio/mpeg");
