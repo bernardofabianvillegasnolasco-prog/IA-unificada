@@ -108,7 +108,7 @@ function hookPost(text){
   // quita lista numerada de razonamiento 1. Clarificar / 2. Decidir...
   text = (text || '').replace(/^\s*\d+\.\s*(Clarificar|Decidir|Mantener|Responder|Analizar|Pensar)[^\n]*\n?/gim, '');
   // quita bloques meta que vengan después de la respuesta
-  text = text.split(/\*\*(Revisar|Revisi.n|Verificar|Verificaci.n|Recordar|Mejorar|Evaluar|Evaluaci.n)\*\*/i)[0];
+  text = text.split(/\*\*(Revisar|Revisi.n|Review|Verificar|Verificaci.n|Verify|Recordar|Remember|Mejorar|Improve|Evaluar|Evaluaci.n|Evaluate|Plan|Test)\*\*/i)[0];
   text = text.trim();
  let t2 = text||"";
  t2 = t2.replace(/gsk_[A-Za-z0-9_\-]{10,}/g, "[SECRETO BLOQUEADO]");
