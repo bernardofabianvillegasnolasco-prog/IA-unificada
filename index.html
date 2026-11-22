@@ -379,8 +379,12 @@ async function hablarSoloDalia(texto){
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
     audioSoloDalia = new Audio(url);
-    audioSoloDalia.playbackRate = 1.25;
-    await audioSoloDalia.play();
+    audioSoloDalia.playbackRate = 1.0;
+    await new Promise((res)=>{
+      audioSoloDalia.onended = ()=>res(true);
+      audioSoloDalia.onerror = ()=>res(false);
+      audioSoloDalia.play().catch(()=>res(false));
+    });
   }catch(e){ console.log('Error Dalia, reintentando...', e); }
 }
 window.hablar = hablarSoloDalia;
