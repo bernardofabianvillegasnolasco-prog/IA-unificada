@@ -8,7 +8,7 @@ const MAX_CACHE_BYTES = 50 * 1024 * 1024;
 let CACHE_BYTES = 0;
 
 function limpiar(texto) {
-  let t = String(texto || "").trim().slice(0, 900);
+  let t = String(texto || "").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"").trim().slice(0, 900);
   const malas = ['asterisco','asteriscos','guion','guiones','slash','diagonal','barra','parentesis','paréntesis','corchete','llave','comillas','numeral','almohadilla','arroba','porcentaje','ampersand'];
   t = t.split(' ').filter(w => !malas.includes(w.toLowerCase())).join(' ');
   t = t.replace(/[*#_@%]/g, ' ').replace(/\s+/g, ' ').trim();
