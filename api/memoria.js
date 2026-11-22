@@ -61,8 +61,10 @@ export function limpiarMemoriaVieja(MEM) {
 // BF TTL CORRECTO - mejora 3
 export const TTL_CORRECTO_BF = 1000 * 60 * 60 * 24;
 export function esViejoBF(entry, ahora = Date.now()) {
-  if (!entry || !entry._ts) return false;
-  return (ahora - entry._ts) > TTL_CORRECTO_BF;
+  const ts = entry?._ts || entry?.actualizado || entry?.updatedAt || 0;
+  if (!ts) return false;
+  const tsMs = typeof ts === 'string' ? Date.parse(ts) : ts;
+  return (ahora - tsMs) > TTL_CORRECTO_BF;
 }
 export function limpiarMemoriaCorrectaBF(MEM) {
   const ahora = Date.now();

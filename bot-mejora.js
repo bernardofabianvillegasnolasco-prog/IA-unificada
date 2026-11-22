@@ -55,7 +55,7 @@ async function main() {
   const prompt = `Estudia este proyecto IA-Unificada y propón 5 mejoras concretas, ordenadas por impacto. Por cada mejora: problema, qué cambiar, código exacto, riesgo bajo/medio/alto. NO apliques cambios, solo propón.\n\nPROYECTO:\n${codigo}`;
   const mejora = await preguntarGroq(prompt);
   const salida = `# MEJORAS - ${fecha}\n\n${mejora}\n\n---\nGenerado por bot-mejora.js\n`;
-  fs.writeFileSync("MEJORAS.md", salida);
+  if (mejora.includes("Sin respuesta de Groq")) { console.log("Groq fallo, NO sobrescribo MEJORAS.md, conservo la anterior"); } else { fs.writeFileSync("MEJORAS.md", salida); }
   fs.appendFileSync("MEJORAS-historial.md", "\n\n" + salida);
   console.log("✅ Listo: MEJORAS.md");
   console.log(mejora.slice(0, 1200));

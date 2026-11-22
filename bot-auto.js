@@ -27,6 +27,7 @@ run("node bot-mejora.js");
 // 3. Lee MEJORAS.md y solo aplica si dice Riesgo Bajo y es seguro
 const mejoras = fs.existsSync("MEJORAS.md") ? fs.readFileSync("MEJORAS.md", "utf-8") : "";
 log("MEJORAS.md leído: " + mejoras.length + " chars");
+if (mejoras.length < 500 || mejoras.includes("Sin respuesta de Groq")) { log("Groq falló, NO despliego, conservo deploy anterior"); process.exit(0); }
 
 // REGLAS DURAS: nunca auto-aplicar esto
 const PROHIBIDO = ["runtime: 'edge'", 'runtime: "edge"', "GROQ_API_KEY", "GEMINI_API_KEY", "Dios Supremo", "process.env.GROQ", "process.env.GEMINI"];

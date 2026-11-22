@@ -3,7 +3,9 @@ import crypto from "crypto";
 
 // Cache en memoria: texto -> audio
 const CACHE = new Map();
-const MAX_CACHE = 50;
+const MAX_CACHE = 100;
+const MAX_CACHE_BYTES = 50 * 1024 * 1024;
+let CACHE_BYTES = 0;
 
 function limpiar(texto) {
   let t = String(texto || "").trim().slice(0, 900);
@@ -35,8 +37,8 @@ export default async function handler(req, res) {
     await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
     const buffer = tts.toBuffer();
     if (!buffer || !buffer.length) { logBF("error", "TTS vacio", { reqId }); return res.status(500).json({ ok: false, error: "TTS vacio - toBuffer 0 bytes", reqId }); }
-    if (CACHE.size >= MAX_CACHE) { const primero = CACHE.keys().next().value; CACHE.delete(primero); }
-    CACHE.set(key, buffer);
+    while ((CACHE.size >= MAX_CACHE || CACHE_BYTES + buffer.length > MAX_CACHE_BYTES) && CACHE.size > 0) { const primero = CACHE.keys().next().value; const viejo = CACHE.get(primero); CACHE_BYTES -= viejo?.length || 0; CACHE.delete(primero); }
+    CACHE.set(key, buffer); CACHE_BYTES += buffer.length;
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
     res.setHeader("X-BF-Cache", "MISS");
