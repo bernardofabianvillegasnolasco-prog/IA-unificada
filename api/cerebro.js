@@ -152,7 +152,7 @@ export default async function handler(req,res){
    });
    const j=await r.json();
    if(j.choices && j.choices[0] && j.choices[0].message.content){
-    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:[\s\S]*?\*\*Implement\*\*:/gi, '').replace(/\*\*(Plan|Test|Implement)\*\*:?/gi, '').trim()});
+    return res.status(200).json({cerebro:`BF x13 - ${model} (Groq) + MEMORIA + ECC:${skillUsar||"auto"} + AGENTE:${agenteUsar||"ninguno"}`, text:hookPost(j.choices[0].message.content).replace(/\*\*Plan\*\*:?[\s\S]*?\*\*Implement(?:aci.n|ation)?\*\*:?/gi, '').replace(/\*\*(Plan|Test|Implement(?:aci.n|ation)?)\*\*:?/gi, '').trim()});
    }
   }catch(e){ continue; }
  }
