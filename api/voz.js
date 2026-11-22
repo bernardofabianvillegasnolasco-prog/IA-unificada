@@ -5,7 +5,7 @@ const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const USE_REDIS = Boolean(REDIS_URL && REDIS_TOKEN);
 async function redisGetBF(key){ if(!USE_REDIS) return null; try{ const r = await fetch(`${REDIS_URL}/get/${key}`, {headers:{Authorization:`Bearer ${REDIS_TOKEN}`}}); const j = await r.json(); return j.result ? Buffer.from(j.result,"base64") : null; }catch(_){ return null; } }
-async function redisSetBF(key, buffer){ if(!USE_REDIS) return; try{ const b64 = buffer.toString("base64"); await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(b64)}`, {method:"POST", headers:{Authorization:`Bearer ${REDIS_TOKEN}`}}); }catch(_){} }
+async function redisSetBF(key, buffer){ if(!USE_REDIS) return; try{ const b64 = buffer.toString("base64"); await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(b64)}?EX=86400`, {method:"POST", headers:{Authorization:`Bearer ${REDIS_TOKEN}`}}); }catch(_){} }
 
 // Cache en memoria: texto -> audio
 const CACHE = new Map();
