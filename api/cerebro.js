@@ -101,6 +101,15 @@ function hookPre(prompt){
  return "";
 }
 function hookPost(text){
+  // LIMPIEZA_FUERTE_BF: si viene Implementar, quédate solo con lo de después
+  let _orig = text || '';
+  let _m = _orig.match(/\*\*Implement(?:ar|aci.n|ation)?\*\*:?\s*([\s\S]*)/i);
+  if (_m) { text = _m[1]; }
+  // quita lista numerada de razonamiento 1. Clarificar / 2. Decidir...
+  text = (text || '').replace(/^\s*\d+\.\s*(Clarificar|Decidir|Mantener|Responder|Analizar|Pensar)[^\n]*\n?/gim, '');
+  // quita bloques meta que vengan después de la respuesta
+  text = text.split(/\*\*(Revisar|Revisi.n|Verificar|Verificaci.n|Recordar|Mejorar|Evaluar|Evaluaci.n)\*\*/i)[0];
+  text = text.trim();
  let t2 = text||"";
  t2 = t2.replace(/gsk_[A-Za-z0-9_\-]{10,}/g, "[SECRETO BLOQUEADO]");
  t2 = t2.replace(/sk-proj-[A-Za-z0-9_\-]{10,}/g, "[SECRETO BLOQUEADO]");
