@@ -1,3 +1,4 @@
+function ponerAcentosSalida(s){ return String(s||'').replace(/ya te generé/gi,'ya te generé').replace(/\bgenere\b/gi,'generé'); }
 export default async function handler(req, res) {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
   const tipo = (body.tipo || body.type || "imagen").toLowerCase();
