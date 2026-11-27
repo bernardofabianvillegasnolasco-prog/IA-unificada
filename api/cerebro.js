@@ -123,6 +123,26 @@ function generaImagenBF(prompt){ const limpio = String(prompt||'').replace(/gene
 const ACENTOS_BF = {arbol:'árbol', camion:'camión', telefono:'teléfono', musica:'música', codigo:'código', funcion:'función', cancion:'canción', corazon:'corazón', avion:'avión', lapiz:'lápiz', arboles:'árboles', imagen:'imagen', generacion:'generación', informacion:'información', conversacion:'conversación', diccionario:'diccionario', definicion:'definición', significa:'significa', tu:'tú', el:'él', si:'sí', mas:'más', aun:'aún', solo:'sólo', esto:'ésto', eso:'éso', aquel:'aquél', esta:'está', estas:'estás', estamos:'estamos', ingles:'inglés', español:'español', mexico:'México', sinaloa:'Sinaloa', phoenix:'Phoenix'};
 function ponerAcentos(texto){ let s=' '+String(texto||'')+' '; for(const [sin,con] of Object.entries(ACENTOS_BF)){ s=s.replace(new RegExp('\\b'+sin+'\\b','gi'), con); } return s.trim(); }
 const ACENTOS_SALIDA = {'genere':'generé','genero':'generó','esta':'está','estas':'estás','mas':'más','arbol':'árbol','cancion':'canción','funcion':'función','informacion':'información','definicion':'definición','telefono':'teléfono','codigo':'código','musica':'música','imagen':'imagen','playa':'playa'};
+function arreglarComas(s){
+  let x = ' ' + String(s||'') + ' ';
+  // 1. Espacio despues de coma y punto, nunca pegado
+  x = x.replace(/\s*,\s*/g, ', ');
+  x = x.replace(/\s*\.\s*/g, '. ');
+  // 2. Coma despues de intro: Correccion ortografica Primera -> Corrección ortográfica:
+  x = x.replace(/Correcci.n ortogr.fica\s+/gi, 'Corrección ortográfica: ');
+  x = x.replace(/Explicaci.n de los cambios\s+/gi, 'Explicación de los cambios: ');
+  // 3. Punto antes de Explicacion si venia pegado
+  x = x.replace(/unificada\s+Explicaci.n/gi, 'unificada. Explicación');
+  // 4. Quitar comas dobles y puntos dobles
+  x = x.replace(/,,+/g, ',').replace(/\.\.+/g, '.');
+  // 5. Mayuscula despues de punto
+  x = x.replace(/\.\s+([a-záéíóú])/g, (m,c) => '. ' + c.toUpperCase());
+  // 6. Primera letra mayuscula y punto final
+  x = x.trim();
+  if(x) x = x.charAt(0).toUpperCase() + x.slice(1);
+  if(x && !/[.!?]$/.test(x)) x += '.';
+  return x.replace(/\s+/g, ' ').trim();
+}
 function ponerAcentosSalida(txt){
   let s = ' ' + String(txt||'') + ' ';
   for(const [k,v] of Object.entries(ACENTOS_SALIDA)){
@@ -131,8 +151,16 @@ function ponerAcentosSalida(txt){
   // Reglas predictivas: verbos en pasado -é / -ó
   s = s.replace(/\bte genere\b/gi,'te generé');
   s = s.replace(/\bya te (\w+)e\b/gi,'ya te $1é');
-  return s.trim();
+  return arreglarComas(s.trim());
 }
+const LECTURA_EXPRESION = `Eres BF, asistente de Lectura, Expresión Oral y Escrita (RAE).
+Reglas obligatorias en TODA respuesta:
+1. Lectura: entiende la idea completa, no repitas la misma frase.
+2. Expresión escrita: oraciones cortas, una idea por oración. Usa coma después de introducción, antes de 'pero', después de 'primero, segundo'. Usa punto para cerrar idea y mayúscula después del punto.
+3. Expresión oral: escribe como se habla, fluido, con pausas naturales. Nada de símbolos, nada de **, nada de #.
+4. Ortografía RAE: acentos donde van (generé, árbol, canción, información, definición, está, más, tú, sí), b/v, s/c/z, h correcta, sin faltas.
+5. Claridad: primero la respuesta directa, luego la explicación. Sin rodeos, sin repetir 'texto de cerebro el texto'.
+Si te piden corrección ortográfica, responde así: Corrección ortográfica: [texto corregido]. Explicación de los cambios: [palabra original -> corregida, motivo].`;
 async function consultaRAE(palabra){ const w0=String(palabra||'').toLowerCase().trim().split(/\s+/)[0]; if(!w0) return null; let candidatos=[w0]; try{ const rs=await fetch('https://es.wiktionary.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(w0)+'&format=json&origin=*'); const js=await rs.json(); const titulos=(js?.query?.search||[]).map(s=>s.title).filter(Boolean); for(const tt of titulos){ if(!candidatos.includes(tt)) candidatos.push(tt); } }catch(e){} for(const w of candidatos){ try{ const r=await fetch('https://es.wiktionary.org/w/api.php?action=query&prop=extracts&titles='+encodeURIComponent(w)+'&format=json&explaintext=1&origin=*'); const j=await r.json(); let txt=(Object.values(j?.query?.pages||{})[0]?.extract||'').trim(); if(!txt || txt.toLowerCase().includes('grafía obsoleta')) continue; const lineas=txt.split('\n').map(s=>s.trim()).filter(s=>s.length>25 && !s.startsWith('=') && !/^(del |etimolog|sinónimo|antónimo|relacionados|cognados|cohipónimo)/i.test(s) && !s.includes('plural:') && !s.toLowerCase().startsWith('grafía')).slice(0,3); if(lineas.length) return {palabra:w, definiciones:lineas, fuente:'Wikcionario ES + RAE', url:'https://dle.rae.es/'+encodeURIComponent(w)}; }catch(e){} } return null; }
 function extraePalabraDiccionario(prompt){ const low=String(prompt||'').toLowerCase(); const m=low.match(/(?:qué significa|que significa|significado de|definición de|definicion de|define|diccionario|rae)\s+([a-záéíóúñü]+)/i); if(m) return m[1]; if(low.startsWith('rae ')) return low.replace('rae ','').split(' ')[0]; return null; }
 export default async function handler(req,res){
@@ -185,7 +213,7 @@ export default async function handler(req,res){
  let sysTxt = "Eres BF v31 DIOS SUPREMO. Sigues flujo ECC: plan -> test -> implement -> review -> verify -> remember -> improve. Responde en espanol claro. Planifica en silencio, nunca muestres Plan, Test, Implementar, Review, Verify, Remember ni Improve en tu respuesta. Solo entrega la respuesta final. NO_MUESTRES_RAZONAMIENTO";
  if(skillTexto) sysTxt += "\n--- SKILL ECC: " + skillUsar + " ---\n" + skillTexto;
  if(agenteTexto) sysTxt += "\n--- AGENTE ECC: " + agenteUsar + " ---\n" + agenteTexto;
- let messages = [{role:"system", content: sysTxt}];
+let messages = [{role:"system", content: LECTURA_EXPRESION + "\n\n" + sysTxt}];
  const h = (historial||[]).slice(-8);
  for(const m of h){
   if(m.role==='user') messages.push({role:"user", content:m.content});
