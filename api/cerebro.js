@@ -131,19 +131,16 @@ function ponerAcentos(texto){ let s=' '+String(texto||'')+' '; for(const [sin,co
 const ACENTOS_SALIDA = {'genere':'generé','genero':'generó','mas':'más','arbol':'árbol','cancion':'canción','funcion':'función','informacion':'información','definicion':'definición','telefono':'teléfono','codigo':'código','musica':'música','imagen':'imagen','playa':'playa'};
 function arreglarComas(s){
   let x = ' ' + String(s||'') + ' ';
-  // 1. Espacio despues de coma y punto, nunca pegado
+  x = x.replace(/Correcci\u00f3n ortogr\u00e1fica\s+(?!:)/gi, 'Corrección ortográfica: ');
+  x = x.replace(/Explicaci\u00f3n de los cambios\s+(?!:)/gi, 'Explicación de los cambios: ');
+  x = x.replace(/Palabra corregida\s+Motivo/gi, 'Palabra corregida, Motivo: ');
+  x = x.replace(/Motivo\s+(?!:)/gi, 'Motivo: ');
+  x = x.replace(/(Segunda)\s+Se inicia/gi, '$1, Se inicia');
+  x = x.replace(/igual\s+solo/gi, 'igual, solo');
   x = x.replace(/\s*,\s*/g, ', ');
   x = x.replace(/\s*\.\s*/g, '. ');
-  // 2. Coma despues de intro: Correccion ortografica Primera -> Corrección ortográfica:
-  x = x.replace(/Correcci.n ortogr.fica\s+/gi, 'Corrección ortográfica: ');
-  x = x.replace(/Explicaci.n de los cambios\s+/gi, 'Explicación de los cambios: ');
-  // 3. Punto antes de Explicacion si venia pegado
-  x = x.replace(/unificada\s+Explicaci.n/gi, 'unificada. Explicación');
-  // 4. Quitar comas dobles y puntos dobles
   x = x.replace(/,,+/g, ',').replace(/\.\.+/g, '.');
-  // 5. Mayuscula despues de punto
-  x = x.replace(/\.\s+([a-záéíóú])/g, (m,c) => '. ' + c.toUpperCase());
-  // 6. Primera letra mayuscula y punto final
+  x = x.replace(/\.\s+([a-z\u00e1\u00e9\u00ed\u00f3\u00fa])/g, (m,c) => '. ' + c.toUpperCase());
   x = x.trim();
   if(x) x = x.charAt(0).toUpperCase() + x.slice(1);
   if(x && !/[.!?]$/.test(x)) x += '.';
