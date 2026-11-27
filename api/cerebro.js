@@ -159,7 +159,7 @@ export default async function handler(req,res){
   const esPedidoImagen = lowImg.startsWith('genera') || lowImg.startsWith('crea') || lowImg.startsWith('haz') || lowImg.startsWith('dibuja') || lowImg.startsWith('dibujame') || lowImg.includes('genera una imagen') || lowImg.includes('genera la imagen') || lowImg.includes('imagen de');
   if(esPedidoImagen){
     const img = generaImagenBF(prompt);
-    return res.status(200).json({cerebro:'BF Imagen + Flux', text:'Listo, ya te genere la imagen..', imagen: img.url, url: img.url, prompt: img.prompt});
+    return res.status(200).json({cerebro:'BF Imagen + Flux', text:'Listo, ya te generé la imagen..', imagen: img.url, url: img.url, prompt: img.prompt});
   }
   if (typeof esPeligroso === 'function' && esPeligroso(prompt)) { return res.status(400).json({ok:false, error:'Prompt contiene contenido prohibido'}); }
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
