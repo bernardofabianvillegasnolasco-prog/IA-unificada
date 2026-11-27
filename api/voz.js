@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       return res.status(200).send(cached);
     }
     const tts = new EdgeTTS();
-    await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
+    await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "8%", pitch: "+0Hz" });
     const buffer = tts.toBuffer();
     if (!buffer || !buffer.length) { logBF("error", "TTS vacio", { reqId }); return res.status(500).json({ ok: false, error: "TTS vacio - toBuffer 0 bytes", reqId }); }
     while ((CACHE.size >= MAX_CACHE || CACHE_BYTES + buffer.length > MAX_CACHE_BYTES) && CACHE.size > 0) { const primero = CACHE.keys().next().value; const viejo = CACHE.get(primero); CACHE_BYTES -= viejo?.length || 0; CACHE.delete(primero); }
