@@ -84,7 +84,13 @@ function detectarAgente(pr){
    if(x.includes("agente " + nombre.toLowerCase()) || x.includes("agent " + nombre.toLowerCase())) return nombre;
   }
  }catch(e){}
- // 2. Auto por intencion, sin seleccionar nada
+ // 2. BF primero - antes que los genericos
+ if(x.includes("whatsapp") || x.includes("berna-whatsapp") || x.includes("mensaje por voz")) return "bf-whatsapp";
+ if(x.includes("genera imagen") || x.includes("genera la imagen") || x.includes("genera la playa") || x.includes("dibuja") || x.includes("genera un video") || x.includes("genera video")) return "bf-imagen";
+ if(x.includes("habla") || x.includes("voz") || x.includes("narrar") || x.includes("conversar") || x.includes("dalia")) return "bf-voz";
+ if(x.includes("definicion") || x.includes("definición") || x.includes("que significa") || x.includes("correccion ortografica") || x.includes("corrección ortográfica") || x.includes("rae")) return "bf-rae";
+ if(x.includes("buena ortografia") || x.includes("buena ortografía") || x.includes("comas") || x.includes("que se entienda") || x.includes("claro y sin falta")) return "bf-lectura";
+ // 2b. Auto por intencion, sin seleccionar nada
  if(x.includes("revisa") || x.includes("revisar") || x.includes("review") || x.includes("corrige")) return "code-reviewer";
  if(x.includes("planifica") || x.includes("arquitectura") || x.includes("disena") || x.includes("diseña")) return "architect";
  if(x.includes("error de build") || x.includes("no compila") || x.includes("falla el build") || x.includes("build")) return "build-error-resolver";
