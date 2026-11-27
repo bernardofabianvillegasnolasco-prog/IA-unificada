@@ -13,8 +13,6 @@ const MAX_CACHE = 100;
 const MAX_CACHE_BYTES = 50 * 1024 * 1024;
 let CACHE_BYTES = 0;
 
-  return s;
-}
 function limpiar(texto) {
   let t = String(texto || "").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"").trim().slice(0, 900);
   const malas = ['asterisco','asteriscos','guion','guiones','slash','diagonal','barra','parentesis','paréntesis','corchete','llave','comillas','numeral','almohadilla','arroba','porcentaje','ampersand'];
