@@ -13,6 +13,16 @@ const MAX_CACHE = 100;
 const MAX_CACHE_BYTES = 50 * 1024 * 1024;
 let CACHE_BYTES = 0;
 
+function aplicarEnfasis(texto) {
+  let s = String(texto || "");
+  // **palabra** -> énfasis fuerte
+  s = s.replace(/\*\*(.+?)\*\*/g, '<emphasis level="strong">$1</emphasis>');
+  // *palabra* -> énfasis moderado
+  s = s.replace(/\*(.+?)\*/g, '<emphasis level="moderate">$1</emphasis>');
+  // PALABRAS EN MAYUSCULAS de 3+ letras -> énfasis
+  s = s.replace(/\b([A-ZÁÉÍÓÚÑ]{3,})\b/g, '<emphasis level="strong">$1</emphasis>');
+  return s;
+}
 function limpiar(texto) {
   let t = String(texto || "").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"").trim().slice(0, 900);
   const malas = ['asterisco','asteriscos','guion','guiones','slash','diagonal','barra','parentesis','paréntesis','corchete','llave','comillas','numeral','almohadilla','arroba','porcentaje','ampersand'];
@@ -37,7 +47,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    const texto = limpiar(body.texto || body.prompt || body.text || "");
+    let texto = aplicarEnfasis(limpiar(body.texto || body.prompt || body.text || ""));
     const key = crypto.createHash("sha256").update(texto).digest("hex");
     let cached = CACHE.get(key) || null;
     if (!cached) { try { cached = await redisGetBF(key); if (cached) { CACHE.set(key, cached); CACHE_BYTES += cached.length; } } catch(_) {} }
