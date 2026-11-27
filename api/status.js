@@ -7,13 +7,13 @@ export default async function handler(req, res) {
 
   const models = [
     "openai/gpt-oss-20b",
-    "openai/gpt-oss-120b",
-    "llama/llama-4-scout-17b-16e-instruct",
-    "llama/llama-4-maverick-17b-128e-instruct",
-    "llama-3.3-70b-versatile",
-    "qwen/qwen3-32b",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it"
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-20b"
   ];
 
   return res.status(200).json({

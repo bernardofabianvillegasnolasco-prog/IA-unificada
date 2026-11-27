@@ -25,7 +25,7 @@ async function leerProyecto() {
 }
 
 async function preguntarGroq(prompt) {
-  const modelos = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+  const modelos = ["openai/gpt-oss-20b"];
   for (const modelo of modelos) {
     try {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {

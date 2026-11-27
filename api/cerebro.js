@@ -205,13 +205,13 @@ export default async function handler(req,res){
  const agenteTexto = cargarAgente(agenteUsar);
  const models = [
   "openai/gpt-oss-20b",
-  "openai/gpt-oss-120b",
-  "llama/llama-4-scout-17b-16e-instruct",
-  "llama/llama-4-maverick-17b-128e-instruct",
-  "llama-3.3-70b-versatile",
-  "qwen/qwen3-32b",
-  "mixtral-8x7b-32768",
-  "gemma2-9b-it"
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b"
  ];
  let sysTxt = "Eres BF v31 DIOS SUPREMO. Sigues flujo ECC: plan -> test -> implement -> review -> verify -> remember -> improve. Responde en espanol claro. Planifica en silencio, nunca muestres Plan, Test, Implementar, Review, Verify, Remember ni Improve en tu respuesta. Solo entrega la respuesta final. NO_MUESTRES_RAZONAMIENTO";
  if(skillTexto) sysTxt += "\n--- SKILL ECC: " + skillUsar + " ---\n" + skillTexto;

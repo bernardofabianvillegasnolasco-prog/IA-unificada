@@ -14,3 +14,7 @@ apk-check/
 apk-v1010/
 gen_icons.py
 bf-server.log
+.bf-keys
+.env
+.env.local
+.env.production.local
