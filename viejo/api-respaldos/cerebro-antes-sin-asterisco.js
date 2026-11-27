@@ -76,12 +76,12 @@ export default async function handler(req,res){
  if(!key) return res.status(200).json({cerebro:"SIN KEY", text:"No hay GROQ_API_KEY en Vercel. Ve a Vercel > Settings > Environment Variables"});
  const models = [
   "openai/gpt-oss-20b",
-  "openai/gpt-oss-120b",
-  "llama/llama-4-scout-17b-16e-instruct",
-  "llama/llama-4-maverick-17b-128e-instruct",
-  "llama-3.3-70b-versatile",
-  "qwen/qwen3-32b",
-  "mixtral-8x7b-32768",
+  "openai/gpt-oss-20b",
+  "llama/openai/gpt-oss-20b",
+  "llama/openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-20b",
   "gemma2-9b-it"
  ];
  let contextoPerfil = "";

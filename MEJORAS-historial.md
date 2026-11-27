@@ -1617,3 +1617,1040 @@ Sin respuesta de Groq - revisa GROQ_LEN y que la llave esté en ~/.bf-keys
 
 ---
 Generado por bot-mejora.js
+
+
+# MEJORAS - 21/11/2026, 10:34:33 p.m.
+
+## 5 mejoras concretas (ordenadas por impacto)
+
+| # | Área | Impacto | Riesgo |
+|---|------|---------|--------|
+| 1 | **Cache de audio (api/voz.js)** | Alto – elimina la pérdida de caché entre “cold‑starts”, reduce tiempo de respuesta y consumo de CPU. | Medio (requiere credenciales de Redis). |
+| 2 | **Rate‑limit + limpieza automática (api/cerebro.js)** | Alto – evita que la tabla `RATE_LIMIT_BF` crezca indefinidamente y protege contra ataques DoS. | Bajo. |
+| 3 | **Sanitización y validación de entrada (api/cerebro.js & api/voz.js)** | Alto – cierra vectores de inyección a los LLM y a los logs. | Bajo. |
+| 4 | **TTL y limpieza de memoria (api/memoria.js)** | Medio – garantiza que la memoria “per‑session” no se quede para siempre y que el campo `_ts` exista. | Bajo. |
+| 5 | **CORS y cabeceras de seguridad (todos los endpoints)** | Medio – unifica la política y evita fugas de información en los logs. | Bajo. |
+
+A continuación, para cada mejora se describe el problema, la solución y el **código listo para pegar**.
+
+---
+
+## 1️⃣ Cache de audio en Redis (api/voz.js)
+
+### Problema
+- El cache está **en memoria** (`Map`). En Vercel cada invocación puede ejecutarse en una instancia distinta; al “cold‑start” el cache se pierde.
+- No hay persistencia ni compartición entre instancias, lo que genera **re‑sintetizaciones** innecesarias y mayor latencia.
+
+### Qué cambiar
+- Reemplazar el `Map` por **Upstash Redis** (o cualquier Redis HTTP) usando las variables de entorno `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
+- Mantener la lógica de LRU local como fallback, pero **primero consultar Redis**.
+
+### Código a pegar (sólo la parte del handler)
+
+```js
+// ---------- api/voz.js ----------
+import { EdgeTTS } from "@andresaya/edge-tts";
+import crypto from "crypto";
+import fetch from "node-fetch";               // ya está en dependencias
+
+// ---------- CONFIG ----------
+const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const REDIS_TTL   = 60 * 60 * 24; // 24 h (en segundos)
+
+// ---------- HELPERS ----------
+async function redisGet(key) {
+  if (!REDIS_URL) return null;
+  const r = await fetch(`${REDIS_URL}/get/${key}`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  });
+  const j = await r.json();
+  if (j.result) return Buffer.from(j.result, "base64");
+  return null;
+}
+async function redisSet(key, buffer) {
+  if (!REDIS_URL) return;
+  const value = buffer.toString("base64");
+  await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(value)}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  });
+}
+
+// ---------- CACHE LOCAL (fallback) ----------
+const LOCAL_CACHE = new Map();
+const MAX_LOCAL_ITEMS = 100;
+const MAX_LOCAL_BYTES = 50 * 1024 * 1024;
+let localBytes = 0;
+function evictLocalIfNeeded(newSize) {
+  while (
+    (LOCAL_CACHE.size >= MAX_LOCAL_ITEMS ||
+      localBytes + newSize > MAX_LOCAL_BYTES) &&
+    LOCAL_CACHE.size > 0
+  ) {
+    const oldestKey = LOCAL_CACHE.keys().next().value;
+    const oldBuf = LOCAL_CACHE.get(oldestKey);
+    localBytes -= oldBuf?.length || 0;
+    LOCAL_CACHE.delete(oldestKey);
+  }
+}
+
+// ---------- HANDLER ----------
+export default async function handler(req, res) {
+  const reqId = Math.random().toString(36).slice(2, 8);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  try {
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const texto = limpiar(body.texto || body.prompt || body.text || "");
+    const key = crypto.createHash("sha256").update(texto).digest("hex");
+
+    // 1️⃣ Intentamos Redis
+    let audio = await redisGet(key);
+    if (audio) {
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("X-BF-Cache", "HIT-REDIS");
+      return res.status(200).send(audio);
+    }
+
+    // 2️⃣ Intentamos cache local (fallback)
+    if (LOCAL_CACHE.has(key)) {
+      audio = LOCAL_CACHE.get(key);
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("X-BF-Cache", "HIT-LOCAL");
+      return res.status(200).send(audio);
+    }
+
+    // 3️⃣ Generamos TTS
+    const tts = new EdgeTTS();
+    await tts.synthesize(texto, "es-MX-DaliaNeural", { rate: "5%", pitch: "+10Hz" });
+    const buffer = tts.toBuffer();
+    if (!buffer?.length) throw new Error("TTS vacío");
+
+    // 4️⃣ Guardamos en Redis y en cache local
+    await redisSet(key, buffer);
+    evictLocalIfNeeded(buffer.length);
+    LOCAL_CACHE.set(key, buffer);
+    localBytes += buffer.length;
+
+    // 5️⃣ Respuesta
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+    res.setHeader("X-BF-Cache", "MISS");
+    return res.status(200).send(buffer);
+  } catch (e) {
+    logBF("error", "voz fallo", { reqId, error: String(e).slice(0, 200) });
+    return res.status(500).json({ ok: false, error: String(e).slice(0, 300), reqId });
+  }
+}
+```
+
+> **Riesgo medio** – Necesita crear la base de datos Redis en Upstash y añadir las variables de entorno. No afecta al flujo existente; si Redis falla, el código vuelve al cache local.
+
+---
+
+## 2️⃣ Rate‑limit con expiración automática (api/cerebro.js)
+
+### Problema
+- `RATE_LIMIT_BF` es un `Map` que **nunca se limpia** de entradas viejas (solo cuando supera 500). Con tráfico continuo, la tabla crece y consume memoria.
+- No hay bloqueo temporal cuando se supera el límite.
+
+### Qué cambiar
+- Implementar un **Sliding Window** con TTL por IP usando `Map` + `setTimeout` o, más sencillo, usar la librería ligera `lru-cache` (ya incluida en Vercel) que elimina automáticamente entradas expiradas.
+- Añadir cabecera `Retry-After` cuando se rechaza la petición.
+
+### Código a pegar (reemplaza la sección de rate‑limit)
+
+```js
+// ---------- api/cerebro.js ----------
+import LRU from "lru-cache";
+
+// Configuración del rate‑limit
+const RATE_LIMIT_OPTS = {
+  max: 10_000,               // número máximo de IPs almacenadas
+  ttl: 60 * 1000,            // 1 minuto (tiempo de vida de cada registro)
+  allowStale: false,
+};
+const rateCache = new LRU(RATE_LIMIT_OPTS); // ip → { count, timestamps[] }
+
+function rateLimitBF(req) {
+  const ip = req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim()
+        || req.socket?.remoteAddress
+        || "anon";
+
+  const now = Date.now();
+  const record = rateCache.get(ip) || { count: 0, timestamps: [] };
+
+  // Eliminamos timestamps fuera de la ventana de 1 min
+  record.timestamps = record.timestamps.filter(ts => now - ts < 60_000);
+  record.count = record.timestamps.length;
+
+  if (record.count >= 30) {
+    // Límite superado
+    return { allowed: false, retryAfter: Math.ceil((record.timestamps[0] + 60_000 - now) / 1000) };
+  }
+
+  // Registramos la nueva petición
+  record.timestamps.push(now);
+  record.count++;
+  rateCache.set(ip, record);
+  return { allowed: true };
+}
+```
+
+**Uso dentro del handler (ejemplo rápido):**
+
+```js
+export default async function handler(req, res) {
+  const rl = rateLimitBF(req);
+  if (!rl.allowed) {
+    res.setHeader("Retry-After", rl.retryAfter);
+    return res.status(429).json({ error: "Too many requests", retryAfter: rl.retryAfter });
+  }
+  // … resto del código …
+}
+```
+
+> **Riesgo bajo** – Sólo se añade una dependencia (`lru-cache`) y la lógica es transparente. Si la librería falla, el endpoint seguirá funcionando (el `Map` original se puede dejar como fallback).
+
+---
+
+## 3️⃣ Sanitización y validación robusta (api/cerebro.js & api/voz.js)
+
+### Problema
+- `sanitizarBF` solo elimina HTML y caracteres NUL. Un atacante puede enviar **payloads JSON/JS** que luego se concatenan en prompts de LLM, provocando *prompt‑injection*.
+- No se controla la longitud real del cuerpo (solo se corta a 4000 chars) y no se verifica que sea **texto plano**.
+
+### Qué cambiar
+- Usar la librería `sanitize-html` con una **lista blanca** de etiquetas permitidas (en este caso, ninguna) y limitar la longitud a 2000 caracteres (más seguro).
+- Añadir una función `esSeguroPrompt` que rechace cualquier cadena que contenga patrones peligrosos **después** de la sanitización.
+
+### Código a pegar (instalar primero)
+
+```bash
+npm i sanitize-html
+```
+
+```js
+// ---------- api/cerebro.js ----------
+import sanitizeHtml from "sanitize-html";
+
+function sanitizarBF(s) {
+  const raw = String(s || "").slice(0, 2000); // límite estricto
+  // No permitimos ninguna etiqueta HTML
+  const clean = sanitizeHtml(raw, {
+    allowedTags: [], allowedAttributes: {}, textFilter: (text) => text.replace(/\u0000/g, ""),
+  });
+  return clean.trim();
+}
+
+// Nueva función de validación
+function esSeguroPrompt(texto) {
+  const limpio = sanitizarBF(texto);
+  // Después de limpiar, volvemos a chequear patrones peligrosos
+  return !esPeligroso(limpio);
+}
+
+// Uso dentro del handler (ejemplo)
+export default async function handler(req, res) {
+  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  const prompt = body.prompt || body.texto || "";
+  if (!esSeguroPrompt(prompt)) {
+    return res.status(400).json({ error: "Contenido prohibido en el prompt" });
+  }
+  // … resto del flujo …
+}
+```
+
+> **Riesgo bajo** – La librería es ligera y la lógica solo rechaza contenido peligroso; no afecta a los prompts válidos.
+
+---
+
+## 4️⃣ TTL y limpieza de memoria con timestamp fiable (api/memoria.js)
+
+### Problema
+- La función `limpiarMemoriaVieja` usa `v._ts` que nunca se escribe, por lo que **nunca elimina** datos antiguos.
+- La variable global `MEM` persiste sólo mientras la instancia está viva; en Vercel cada invocación puede crear una nueva copia, lo que lleva a **memorias huérfanas**.
+
+### Qué cambiar
+- Guardar siempre un campo `_ts` (
+
+---
+Generado por bot-mejora.js
+
+
+# MEJORAS - 21/11/2026, 10:42:27 p.m.
+
+## 5 mejoras concretas (ordenadas por impacto)
+
+| # | Área | Impacto | Riesgo |
+|---|------|---------|--------|
+| 1 | **Cache de audio** – pasar de memoria local a Redis (Upstash) | Alto – reduce drásticamente el tiempo de respuesta y evita “cache miss” entre instancias de Vercel. | Medio (requiere variable de entorno y manejo de fallos). |
+| 2 | **Rate‑limit con TTL** – sustituir el `Map` por un LRU con expiración | Alto – evita que la lista de IPs crezca indefinidamente y protege contra ataques DoS. | Bajo |
+| 3 | **Bloqueo de prompts peligrosos** – aplicar `esPeligroso` antes de cualquier llamada a LLM | Alto – cierra una brecha de seguridad que actualmente está declarada pero nunca usada. | Bajo |
+| 4 | **Limpieza automática de la memoria “memoria.js”** – ejecutar `limpiarMemoriaCorrectaBF` cada hora | Medio – evita que el objeto `MEM` se vuelva inmenso en entornos de larga vida (edge‑functions). | Bajo |
+| 5 | **Headers de seguridad** – añadir CSP, X‑XSS‑Protection, Referrer‑Policy estricta | Medio – mejora la postura de seguridad del front‑end sin cambiar lógica. | Bajo |
+
+A continuación el **código exacto** que deberías copiar‑pegar en cada archivo.
+
+---
+
+### 1️⃣ Cache de audio → Upstash Redis (en `api/voz.js`)
+
+```diff
+@@
+-import { EdgeTTS } from "@andresaya/edge-tts";
+-import crypto from "crypto";
++import { EdgeTTS } from "@andresaya/edge-tts";
++import crypto from "crypto";
++import fetch from "node-fetch";   // Vercel ya lo tiene, pero lo importamos explícitamente
+
++// ---------- CONFIGURACIÓN REDIS ----------
++const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL;
++const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
++const USE_REDIS   = Boolean(REDIS_URL && REDIS_TOKEN);
++
++async function redisGet(key) {
++  if (!USE_REDIS) return null;
++  try {
++    const r = await fetch(`${REDIS_URL}/get/${key}`, {
++      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
++    });
++    const j = await r.json();
++    return j.result ? Buffer.from(j.result, "base64") : null;
++  } catch (_) { return null; }
++}
++
++async function redisSet(key, buffer) {
++  if (!USE_REDIS) return;
++  try {
++    const b64 = buffer.toString("base64");
++    await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(b64)}`, {
++      method: "POST",
++      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
++    });
++  } catch (_) {}
++}
+```
+
+```diff
+@@
+-    const key = crypto.createHash("sha256").update(texto).digest("hex");
+-    if (CACHE.has(key)) {
+-      res.setHeader("Content-Type", "audio/mpeg");
+-      res.setHeader("Cache-Control", "public, max-age=86400");
+-      res.setHeader("X-BF-Cache", "HIT");
+-      return res.status(200).send(CACHE.get(key));
+-    }
++    const key = crypto.createHash("sha256").update(texto).digest("hex");
++
++    // 1️⃣ Intentamos leer de Redis (más rápido y compartido)
++    const cachedRedis = await redisGet(key);
++    if (cachedRedis) {
++      res.setHeader("Content-Type", "audio/mpeg");
++      res.setHeader("Cache-Control", "public, max-age=86400");
++      res.setHeader("X-BF-Cache", "HIT-REDIS");
++      return res.status(200).send(cachedRedis);
++    }
++
++    // 2️⃣ Fallback a la caché en‑memoria (para la misma instancia)
++    if (CACHE.has(key)) {
++      res.setHeader("Content-Type", "audio/mpeg");
++      res.setHeader("Cache-Control", "public, max-age=86400");
++      res.setHeader("X-BF-Cache", "HIT-MEM");
++      return res.status(200).send(CACHE.get(key));
++    }
+```
+
+```diff
+@@
+-    CACHE.set(key, buffer); CACHE_BYTES += buffer.length;
++    // Guardamos en ambas cachés
++    CACHE.set(key, buffer);
++    CACHE_BYTES += buffer.length;
++    redisSet(key, buffer);   // fire‑and‑forget
+```
+
+**Riesgo**: Si Redis falla la petición seguirá usando la caché local; el código captura errores y sigue funcionando. Sólo necesitas crear las variables de entorno `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
+
+---
+
+### 2️⃣ Rate‑limit con LRU + TTL (en `api/cerebro.js`)
+
+```diff
+@@
+-const RATE_LIMIT_BF = new Map(); // Map con limpieza, sin librería externa
+-function rateLimitBF(req) {
+-  const ip = req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket?.remoteAddress || "anon";
+-  const ahora = Date.now();
+-  const max = 30;
+-  let arr = RATE_LIMIT_BF.get(ip) || [];
+-  arr = arr.filter(ts => ahora - ts < 60 * 1000);
+-  arr.push(ahora);
+-  RATE_LIMIT_BF.set(ip, arr);
+-  if (RATE_LIMIT_BF.size > 500) { const k = RATE_LIMIT_BF.keys().next().value; RATE_LIMIT_BF.delete(k); }
+-  return arr.length <= max;
+-}
++// ---------- LRU con expiración (TTL 1 min) ----------
++import LRU from "lru-cache";
++
++const rateCache = new LRU({
++  max: 5_000,                     // máximo número de IPs guardadas
++  ttl: 60_000,                    // 1 min en milisegundos
++  updateAgeOnGet: true,
++});
++
++function rateLimitBF(req) {
++  const ip = req.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim()
++          || req.socket?.remoteAddress
++          || "anon";
++  const maxRequests = 30;          // 30 peticiones por minuto
++  const entry = rateCache.get(ip) ?? { count: 0, ts: Date.now() };
++
++  // Si la ventana de 1 min expiró, reiniciamos contador
++  if (Date.now() - entry.ts > 60_000) {
++    entry.count = 0;
++    entry.ts = Date.now();
++  }
++
++  entry.count += 1;
++  rateCache.set(ip, entry);
++  return entry.count <= maxRequests;
++}
+```
+
+**Riesgo**: Muy bajo. Solo se añade una dependencia (`lru-cache`) y la lógica sigue devolviendo `true/false`.  
+
+---
+
+### 3️⃣ Bloqueo de prompts peligrosos (en `api/cerebro.js`)
+
+```diff
+@@
+-export default async function handler(req, res) {
+-  // ... lógica actual ...
++export default async function handler(req, res) {
++  // -------------------------------------------------
++  // 1️⃣ Sanitizamos y verificamos el prompt recibido
++  // -------------------------------------------------
++  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
++  const rawPrompt = body.prompt || body.texto || body.text || "";
++  const prompt = sanitizarBF(rawPrompt);
++
++  if (esPeligroso(prompt)) {
++    logBF("warn", "Intento de prompt peligroso bloqueado", { ip: req.headers["x-forwarded-for"], prompt });
++    return res.status(400).json({ ok: false, error: "Prompt contiene contenido prohibido" });
++  }
++
++  // El resto del código usa `prompt` en vez de `rawPrompt`
++  // -------------------------------------------------
+```
+
+Luego, en los lugares donde se usaba `body.prompt` (por ejemplo al llamar a los LLM), reemplaza por la variable `prompt` ya sanitizada.
+
+**Riesgo**: Bajo. Sólo se rechaza la petición antes de procesarla; no afecta a flujos válidos.
+
+---
+
+### 4️⃣ Limpieza automática de la memoria temporal (en `api/memoria.js`)
+
+```diff
+@@
+ export default async function handler(req, res){
+   res.setHeader('Access-Control-Allow-Origin','*');
+   if(req.method==='OPTIONS') return res.status(200).end();
+   const ip = getIP(req);
+   const id = 'ip-' + ip;
+@@
+   return res.status(405).json({error:'metodo no permitido'});
+ }
+ 
+ // BF TTL: limpia memoria vieja cada 1 hora
+-const TTL_MS = 1000 * 60 * 60 * 24; // 24h
+-let _ultimaLimpieza = 0;
+-export function limpiarMemoriaVieja(MEM) {
+-  const ahora = Date.now();
+-  if (ahora - _ultimaLimpieza < 1000 * 60 * 60) return;
+-  _ultimaLimpieza = ahora;
+-  try {
+-    for (const k of Object.keys(MEM || {})) {
+-      const v = MEM[k];
+-      if (v && v._ts && (ahora - v._ts > TTL_MS)) delete MEM[k];
+-    }
+-  } catch(e) {}
+-}
++const TTL_MS = 1000 * 60 * 60 * 24; // 24 h
++let _ultimaLimpieza = 0;
++
++export function limpiarMemoriaVieja(MEM) {
++  const ahora = Date.now();
++  if (ahora - _ultimaLimpieza < 60_000) return; // una vez por minuto (evita bucle tight)
++  _ultimaLimpieza = ahora;
++  for (const k of Object.keys(MEM || {})) {
++    const v = MEM[k];
++    if (v && v._ts && (ahora - v._ts > TTL_MS)) delete MEM[k];
++  }
++}
++
++// -------------------------------------------------
++// 5️⃣ Scheduler interno (solo en entornos Node, no en Edge)
++// -------------------------------------------------
++if (typeof setInterval === "function") {
++  // Ejecutar cada hora
++  setInterval(() => limpiarMemoriaVieja(MEM), 60 * 60 * 1000);
++}
+```
+
+**Riesgo**: Muy bajo. `setInterval` no se ejecuta en funciones Edge de Vercel (solo en procesos Node), pero no causa errores; simplemente no corre en esos entornos, lo cual está bien porque la memoria se reinicia entre invocaciones.
+
+---
+
+### 5️⃣ Headers de seguridad adicionales (en `api/voz.js` y `api/cerebro.js`)
+
+```diff
+@@
+   res.setHeader("Access-Control-Allow-Origin", "*");
+   res.setHeader("X-Content-Type-Options", "nosniff");
+   res.setHeader("X-Frame-Options", "DENY");
+   res.setHeader("Referrer-Policy", "no-referrer");
++  // ==== Nuevos headers de seguridad ====
++  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:;");
++  res.setHeader("X-XSS-Protection", "1; mode=block");
++  res.setHeader("X-Download-Options", "noopen");
++  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+```
+
+Aplica los mismos encabezados al inicio de `api/cerebro.js` y `api/memoria.js` (donde ya se establecen algunos).
+
+**Riesgo**: Bajo. Los headers son compatibles con navegadores modernos y no alteran la lógica de la API.
+
+---
+
+## Resumen rápido de pasos
+
+1. **Instalar dependencias**  
+   ```bash
+   npm i
+
+---
+Generado por bot-mejora.js
+
+
+# MEJORAS - 21/11/2026, 10:52:40 p.m.
+
+## Mejora 1 – **Cache distribuido con Upstash Redis (voz.js)**  
+**Problema**  
+El endpoint `/api/voz` solo guarda los audios en memoria (`Map CACHE`). En un despliegue server‑less (Vercel) cada invocación puede ejecutarse en una instancia distinta, por lo que el caché se “pierde” entre cold‑starts y no escala. Además no hay expiración (TTL) y nunca se usa la función `redisGetBF/redisSetBF` que ya está declarada.
+
+**Qué cambiar**  
+1. Añadir un TTL (p. ej. 24 h) a la clave de Redis.  
+2. Intentar leer primero de Redis; si no existe, usar el caché en memoria y después guardar en Redis.  
+3. Mantener el caché en memoria como “fast‑lane” pero sincronizarlo con Redis.
+
+**Código exacto (reemplazar la lógica de caché en `handler`)**
+
+```js
+// --- al inicio del archivo, después de las importaciones ---
+const REDIS_TTL_SEC = 60 * 60 * 24; // 24 h
+
+// Helper para obtener de Redis (ya existe redisGetBF, lo reutilizamos)
+async function getFromCache(key) {
+  // 1️⃣ Intentar Redis
+  const fromRedis = await redisGetBF(key);
+  if (fromRedis) {
+    // actualizar caché en memoria (evita lecturas repetidas)
+    CACHE.set(key, fromRedis);
+    CACHE_BYTES += fromRedis.length;
+    return fromRedis;
+  }
+  // 2️⃣ Intentar caché local
+  return CACHE.get(key) ?? null;
+}
+
+// Helper para guardar en ambos caches
+async function setInCache(key, buffer) {
+  // Guardar en Redis (con TTL)
+  await redisSetBF(key, buffer);               // redisSetBF ya hace POST
+  // Guardar en caché local
+  while (
+    (CACHE.size >= MAX_CACHE || CACHE_BYTES + buffer.length > MAX_CACHE_BYTES) &&
+    CACHE.size > 0
+  ) {
+    const oldest = CACHE.keys().next().value;
+    const oldBuf = CACHE.get(oldest);
+    CACHE_BYTES -= oldBuf?.length || 0;
+    CACHE.delete(oldest);
+  }
+  CACHE.set(key, buffer);
+  CACHE_BYTES += buffer.length;
+}
+```
+
+Y dentro del `handler` (reemplazar la sección que verifica `CACHE.has(key)`):
+
+```js
+// ---- antes ----
+if (CACHE.has(key)) { … }
+
+// ---- después ----
+const cached = await getFromCache(key);
+if (cached) {
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+  res.setHeader("X-BF-Cache", "HIT");
+  return res.status(200).send(cached);
+}
+```
+
+Después de generar el `buffer`:
+
+```js
+await setInCache(key, buffer);
+```
+
+**Riesgo** – **medio**  
+- Necesita que las variables de entorno `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` estén configuradas.  
+- Si Redis falla, la petición sigue funcionando (el código atrapa errores), por lo que la degradación es controlada.
+
+---
+
+## Mejora 2 – **Rate‑limit centralizado con Redis (cerebro.js)**  
+**Problema**  
+`RATE_LIMIT_BF` es un `Map` en memoria; en Vercel cada instancia tiene su propio contador, lo que permite fácilmente superar el límite real y abre la puerta a ataques de denegación de servicio.
+
+**Qué cambiar**  
+Usar Upstash Redis como “bucket” de tokens por IP. Cada petición ejecuta un script Lua que decrementa y devuelve el número restante. Si el bucket está vacío, se responde 429.
+
+**Código exacto (añadir al inicio del archivo)**
+
+```js
+// --- después de las importaciones ---
+const REDIS_RATE_URL = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_RATE_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const RATE_LIMIT_MAX = 30;               // peticiones por minuto
+const RATE_LIMIT_WINDOW = 60;            // segundos
+
+async function redisRateCheck(ip) {
+  if (!REDIS_RATE_URL || !REDIS_RATE_TOKEN) return true; // fallback a in‑mem
+
+  const key = `rl:${ip}`;
+  const script = `
+    local current = redis.call("INCR", KEYS[1])
+    if current == 1 then
+      redis.call("EXPIRE", KEYS[1], ARGV[1])
+    end
+    return current
+  `;
+
+  const resp = await fetch(`${REDIS_RATE_URL}/eval`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REDIS_RATE_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      script,
+      keys: [key],
+      args: [RATE_LIMIT_WINDOW],
+    }),
+  });
+
+  const { result } = await resp.json(); // result = contador actual
+  return Number(result) <= RATE_LIMIT_MAX;
+}
+```
+
+**Reemplazar** la llamada a `rateLimitBF(req)` dentro del handler:
+
+```js
+// antes
+if (!rateLimitBF(req)) {
+  return res.status(429).json({ ok: false, error: "Rate limit exceeded" });
+}
+
+// después
+const ip = req.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() ||
+           req.socket?.remoteAddress ||
+           "anon";
+
+if (!(await redisRateCheck(ip))) {
+  return res.status(429).json({ ok: false, error: "Rate limit exceeded" });
+}
+```
+
+**Riesgo** – **bajo**  
+- Si Redis no está disponible, la función devuelve `true` (no bloquea), manteniendo la disponibilidad.  
+- Necesita permisos de escritura en la base Redis (ya usados por otras funciones).
+
+---
+
+## Mejora 3 – **Bloqueo activo de prompts peligrosos (cerebro.js)**  
+**Problema**  
+`esPeligroso(texto)` detecta patrones, pero nunca se usa para rechazar la petición; el endpoint sigue procesando y podría exponer claves o generar contenido no permitido.
+
+**Qué cambiar**  
+Después de sanitizar la entrada, validar con `esPeligroso`. Si devuelve `true`, responder 400 con mensaje claro y registrar el intento.
+
+**Código exacto (añadir justo antes de usar el prompt)**
+
+```js
+// dentro del handler, después de obtener `body.prompt` o similar
+const promptRaw = body.prompt || body.texto || "";
+const prompt = sanitizarBF(promptRaw);
+
+if (esPeligroso(prompt)) {
+  logBF("warn", "Intento de prompt peligroso", { ip, prompt: promptRaw });
+  return res
+    .status(400)
+    .json({ ok: false, error: "Contenido prohibido detectado", reqId });
+}
+```
+
+**Riesgo** – **bajo**  
+- Sólo rechaza entradas que coincidan con la lista; no afecta a usos legítimos.  
+- Evita que un atacante extraiga información sensible.
+
+---
+
+## Mejora 4 – **Limpieza automática de memoria con TTL correcto (memoria.js)**  
+**Problema**  
+Hay dos implementaciones de TTL (`TTL_MS` y `TTL_CORRECTO_BF`). La primera se comenta como “1 hora” pero está a 24 h y nunca se ejecuta; la segunda está exportada pero tampoco se llama en ningún lugar, por lo que la memoria temporal puede crecer indefinidamente.
+
+**Qué cambiar**  
+1. Unificar a una sola constante (`TTL_MS = 60 min`).  
+2. Ejecutar la limpieza en cada petición **GET** y **POST** (antes de leer o escribir).  
+3. Exponer la función como `cleanOldEntries()` y llamarla al inicio del handler.
+
+**Código exacto (reemplazar la sección de TTL y añadir llamada)**
+
+```js
+// --- al inicio del archivo ---
+const TTL_MS = 1000 * 60 * 60; // 1 hora
+
+function cleanOldEntries() {
+  const ahora = Date.now();
+  for (const k of Object.keys(MEM)) {
+    const entry = MEM[k];
+    if (entry && entry._ts && ahora - entry._ts > TTL_MS) {
+      delete MEM[k];
+    }
+  }
+}
+```
+
+Y dentro del `handler` (justo después de `const ip = getIP(req);`):
+
+```js
+// limpiar antes de servir
+cleanOldEntries();
+```
+
+**Riesgo** – **bajo**  
+- Sólo elimina datos que ya están expirados; no afecta a la lógica de guardado.  
+- Reduce consumo de memoria y evita que el objeto `MEM` crezca sin límite.
+
+---
+
+## Mejora 5 – **Cabeceras de seguridad correctas (voz.js & demás APIs)**  
+**Problema**  
+- `Content‑Security‑Policy` contiene una barra invertida escapada (`https:\;`) que rompe la directiva.  
+- `X‑XSS‑Protection` incluye `\;` escapado, lo que produce un header inválido.  
+- Falta la cabecera `Strict-Transport-Security` (HSTS) y `X‑Content‑Type‑Options` ya está, pero podríamos añadir `Referrer-Policy: same-origin`.
+
+**Qué cambiar**  
+Reescribir los headers con valores válidos y añadir HSTS.
+
+**Código exacto (en cada handler, por ejemplo `api/voz.js`)**
+
+```js
+res.setHeader("Content-Security-Policy",
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; connect-src 'self' https:; font-src 'self';");
+res.setHeader("X-XSS-Protection", "1; mode=block");
+res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+res.setHeader("Referrer-Policy", "same-origin");
+```
+
+**Riesgo** – **bajo**  
+- Son solo cabeceras; no alteran la lógica del negocio.  
+- Mejoran la postura de seguridad y evitan que navegadores rechacen la respuesta por encabezados mal formados.
+
+---
+
+### Resumen de impacto (de mayor a menor)
+
+| # | Mejora | Impacto esperado |
+|---|--------|------------------|
+| 1 | Cache distribuido con Redis | Reduce latencia y permite escalar horizontalmente sin perder caché. |
+| 2 | Rate‑limit centralizado con Redis | Protege contra abuso y DDoS en entornos serverless. |
+| 3 | Bloqueo activo de prompts peligrosos | Evita filtraciones de credenciales y contenido no permitido. |
+| 4 | Limpieza automática de memoria (TTL) | Previene fugas de memoria y mantiene el estado coherente. |
+| 5 | Cabeceras de seguridad corregidas | Mejora la compatibilidad y la defensa contra ataques de inyección. |
+
+Todas las modificaciones son **código listo‑para‑pegar** y el **riesgo** está clasificado como bajo o medio, con degradación controlada en caso de fallos de los servicios externos (Redis). Implementándolas obtendrás un proyecto más robusto, seguro y preparado para producción en Vercel.
+
+---
+Generado por bot-mejora.js
+
+
+# MEJORAS - 21/11/2026, 10:58:00 p.m.
+
+**Mejoras propuestas (ordenadas por impacto)**  
+
+| # | Área | Problema | Qué cambiar | Código listo para pegar | Riesgo |
+|---|------|----------|-------------|------------------------|--------|
+| 1 | **Seguridad de entrada** | En `api/voz.js` y `api/cerebro.js` se acepta cualquier texto sin una sanitización estricta. Un atacante puede enviar payloads muy largos, caracteres de control o intentos de “prompt‑injection” que pueden romper el TTS o forzar uso excesivo de recursos. | 1️⃣ Centralizar una función de sanitización que: <br>• limite la longitud a 800 bytes (el TTS falla con textos muy largos). <br>• elimine caracteres de control y HTML. <br>• rechace cualquier cadena que contenga los *patrones peligrosos* ya definidos. <br>2️⃣ Usarla en **todos** los endpoints antes de procesar el cuerpo. | ```js
+// utils/sanitize.js  (nuevo archivo)
+import crypto from "crypto";
+
+const MAX_TEXT_LEN = 800;               // límite seguro para Edge‑TTS
+const DANGEROUS_PATTERNS = [
+  /api[_-]?key/i, /gsk_/i, /sk-/i, /bearer/i, /process\.env/i,
+  /muestrame tu (prompt|system|instrucciones)/i, /ignora (tus )?instrucciones/i,
+  /eres (dan|sin filtros|sin limites)/i, /dame (tu|el) codigo/i,
+  /\.env/i, /\.bf-keys/i, /GEMINI_API_KEY/i, /GROQ_API_KEY/i
+];
+
+/**
+ * Devuelve el texto limpio o lanza `Error` si es peligroso.
+ */
+export function sanitizeInput(raw) {
+  let txt = String(raw ?? "").trim();
+
+  // 1️⃣ corta longitud máxima
+  if (txt.length > MAX_TEXT_LEN) txt = txt.slice(0, MAX_TEXT_LEN);
+
+  // 2️⃣ elimina HTML y caracteres de control
+  txt = txt.replace(/<[^>]*>/g, " ")
+           .replace(/[\x00-\x1F\x7F]/g, " ")
+           .replace(/\s+/g, " ")
+           .trim();
+
+  // 3️⃣ verifica patrones peligrosos
+  const isBad = DANGEROUS_PATTERNS.some(rx => rx.test(txt));
+  if (isBad) throw new Error("Contenido prohibido");
+
+  return txt;
+}
+```
+
+**Uso en `api/voz.js` (solo el fragmento que cambia):**  
+
+```js
+import { sanitizeInput } from "../../utils/sanitize.js";   // ← ruta según tu estructura
+
+// dentro del handler, justo después de parsear el body
+let texto;
+try {
+  texto = sanitizeInput(body.texto || body.prompt || body.text || "");
+} catch (e) {
+  logBF("warn", "Entrada rechazada", { reqId, error: e.message });
+  return res.status(400).json({ ok: false, error: e.message, reqId });
+}
+```
+
+**Uso en `api/cerebro.js` (reemplazar `sanitizarBF`):**  
+
+```js
+import { sanitizeInput } from "../../utils/sanitize.js";
+
+function sanitizarBF(s) {
+  try {
+    return sanitizeInput(s);
+  } catch (_) {
+    // si la entrada es peligrosa devolvemos cadena vacía (el endpoint ya
+    // responderá con error 400 en la capa superior)
+    return "";
+  }
+}
+```
+
+| **Riesgo** | **Bajo** – solo se añaden validaciones; no cambia la lógica existente. |
+|---|---|
+
+---
+
+| 2 | **Rate‑limit robusto** | El limitador actual (`RATE_LIMIT_BF`) es una Map manual que nunca se persiste entre invocaciones y puede crecer sin control en entornos con alta concurrencia, provocando consumo de memoria y falsos positivos. | Reemplazar la lógica por la librería **`rate-limiter-flexible`** que soporta Redis (si está disponible) y fallback a memoria con TTL automática. | ```js
+// utils/rateLimiter.js  (nuevo archivo)
+import { RateLimiterMemory, RateLimiterRedis } from "rate-limiter-flexible";
+
+const MAX_POINTS = 30;          // 30 peticiones
+const DURATION   = 60;          // por minuto
+
+let limiter;
+
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  // Redis‑based limiter (usa la API REST de Upstash)
+  const Redis = require("ioredis");
+  const redis = new Redis({
+    host: process.env.UPSTASH_REDIS_REST_URL.split("//")[1],
+    password: process.env.UPSTASH_REDIS_REST_TOKEN,
+    tls: {}
+  });
+  limiter = new RateLimiterRedis({
+    storeClient: redis,
+    points: MAX_POINTS,
+    duration: DURATION,
+    keyPrefix: "rlf"
+  });
+} else {
+  // In‑memory fallback
+  limiter = new RateLimiterMemory({
+    points: MAX_POINTS,
+    duration: DURATION
+  });
+}
+
+/**
+ * Middleware estilo Express/Vercel que devuelve `true` si la petición está permitida.
+ */
+export async function checkRateLimit(ip) {
+  try {
+    await limiter.consume(ip);
+    return true;
+  } catch (rej) {
+    // `rej` contiene `msBeforeNext`
+    return false;
+  }
+}
+```
+
+**Uso en `api/cerebro.js` (reemplazar `rateLimitBF`):**  
+
+```js
+import { checkRateLimit } from "../../utils/rateLimiter.js";
+
+export default async function handler(req, res) {
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+           || req.socket?.remoteAddress
+           || "anon";
+
+  const allowed = await checkRateLimit(ip);
+  if (!allowed) {
+    return res.status(429).json({ ok: false, error: "Too many requests" });
+  }
+
+  // ... resto del handler
+}
+```
+
+| **Riesgo** | **Medio** – se introduce una dependencia externa y se cambia la lógica de limitación; sin embargo, la API es estable y la fallback a memoria garantiza que no se rompa en entornos sin Redis. |
+|---|---|
+
+---
+
+| 3 | **Cache LRU + TTL en Redis** | La caché en memoria de `api/voz.js` es un `Map` simple que elimina el primer elemento insertado (FIFO). No respeta la frecuencia de uso y puede expulsar datos “calientes”. Además, los objetos guardados en Redis nunca expiran, lo que genera datos obsoletos. | 1️⃣ Sustituir `CACHE` por **`lru-cache`** con `maxSize` y `ttl`. <br>2️⃣ Al guardar en Redis, añadir un parámetro `expire` (p. ej. 24 h). | ```js
+// utils/audioCache.js  (nuevo archivo)
+import LRU from "lru-cache";
+
+export const audioCache = new LRU({
+  maxSize: 50 * 1024 * 1024,   // 50 MiB total
+  sizeCalculation: (value, key) => value.length,
+  ttl: 24 * 60 * 60 * 1000,    // 24 h
+  allowStale: false
+});
+```
+
+**Cambios en `api/voz.js`:**  
+
+```js
+import { audioCache } from "../../utils/audioCache.js";
+import { redisSetBF, redisGetBF } from "./redisHelpers.js"; // (puedes extraer esas funciones a utils/redis.js)
+
+// ... dentro del handler
+let cached = audioCache.get(key);
+if (!cached) {
+  cached = await redisGetBF(key);
+  if (cached) audioCache.set(key, cached);   // guarda en LRU
+}
+if (cached) {
+  // respuesta cacheada (igual que antes)
+}
+
+// después de generar `buffer`
+audioCache.set(key, buffer);
+await redisSetBF(key, buffer, 24 * 60 * 60); // 24 h TTL (modifica redisSetBF para aceptar ttl)
+```
+
+**Modifica `redisSetBF` (en `utils/redis.js`):**  
+
+```js
+export async function redisSetBF(key, buffer, ttlSec = 86400) {
+  if (!USE_REDIS) return;
+  try {
+    const b64 = buffer.toString("base64");
+    const url = `${REDIS_URL}/set/${key}/${encodeURIComponent(b64)}?expire=${ttlSec}`;
+    await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+  } catch (_) {}
+}
+```
+
+| **Riesgo** | **Bajo‑Medio** – se agrega una dependencia ligera (`lru-cache`) y se cambia la política de expulsión; el comportamiento funcional sigue siendo el mismo, solo mejora la eficiencia. |
+|---|---|
+
+---
+
+| 4 | **Centralizar cabeceras de seguridad** | Cada endpoint repite manualmente 10+ cabeceras (`Content‑Security‑Policy`, `X‑XSS‑Protection`, etc.). Es fácil olvidar alguna y genera inconsistencias. | Crear un **middleware** que añada esas cabeceras y usarlo en todos los handlers (Vercel permite exportar una función `middleware`). | ```js
+// middleware/securityHeaders.js  (nuevo archivo)
+export function applySecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:"
+  );
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+}
+```
+
+**Uso en cualquier endpoint (ejemplo `api/voz.js`):**  
+
+```js
+import { applySecurityHeaders } from "../../middleware/securityHeaders.js";
+
+export default async function handler(req, res) {
+  applySecurityHeaders(res);
+  // resto del código...
+}
+```
+
+| **Riesgo** | **Bajo** – solo se abstrae código; no cambia la lógica de negocio. |
+|---|---|
+
+---
+
+| 5 | **Eliminar dependencias innecesarias y usar Edge Runtime** | El proyecto incluye `express`, `cors`, `node-fetch`, `bcrypt`, `@capacitor/*`, etc., que nunca se usan en los *serverless functions* de Vercel y aumentan el bundle, el tiempo de cold‑start y el coste. Además, `edge-tts` ya funciona en el **Edge Runtime**, por lo que podemos mover `api/voz.js` a una **Edge Function** (`export const config = { runtime: "edge" }`). | 1️⃣ Revisar `package.json` y borrar paquetes no usados. <br>2️⃣ Añadir la configuración de runtime a los archivos que lo soporten (`voz.js`, `cerebro.js`, `memoria.js`). | ```bash
+# 1️⃣ Elimina paquetes innecesarios (ejemplo)
+npm uninstall express cors bcrypt @capacitor-community/speech-recognition @capacitor/android @capacitor/cli @capacitor/core
+```
+
+**Añadir runtime a `api/voz.js`:**  
+
+```js
+export const config = {
+  runtime: "edge",          // <-- Vercel ejecutará esto en el Edge
+  regions: ["cdg1"]         // opcional: zona más cercana a tus usuarios
+};
+```
+
+*(Repite la exportación `config` en los demás handlers que no dependan de Node‑only APIs.)*
+
+| **Riesgo** | **Medio** – al mover a Edge Runtime se pierde acceso a APIs de Node que no estén disponibles (por ejemplo, `fs`). En los archivos actuales (`voz.js`) no se usa `fs`, por lo que es seguro; sin embargo, hay que validar que `cerebro
+
+---
+Generado por bot-mejora.js
