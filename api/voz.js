@@ -42,7 +42,7 @@ function limpiar(texto) {
   let t = String(texto || "").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"").trim().slice(0, 900);
   const malas = ['asterisco','asteriscos','guion','guiones','slash','diagonal','barra','parentesis','paréntesis','corchete','llave','comillas','numeral','almohadilla','arroba','porcentaje','ampersand'];
   t = t.split(' ').filter(w => !malas.includes(w.toLowerCase())).join(' ');
-  t = t.replace(/[*#_@%]/g, ' ').replace(/\s+/g, ' ').trim();
+  t = t.replace(/[*#_@%<>{}\[\]\\\/|_=+`~^$&]/g, ' ').replace(/\s+/g, ' ').trim();
   return t || "Que onda, soy tu BF, Dalia, ya hablo yo";
 }
 
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    let texto = respetarPuntuacion(aplicarEnfasis(limpiar(body.texto || body.prompt || body.text || "")));
+    let texto = limpiar(body.texto || body.prompt || body.text || "");
     const key = crypto.createHash("sha256").update(texto).digest("hex");
     let cached = CACHE.get(key) || null;
     if (!cached) { try { cached = await redisGetBF(key); if (cached) { CACHE.set(key, cached); CACHE_BYTES += cached.length; } } catch(_) {} }
