@@ -13,29 +13,6 @@ const MAX_CACHE = 100;
 const MAX_CACHE_BYTES = 50 * 1024 * 1024;
 let CACHE_BYTES = 0;
 
-function respetarPuntuacion(texto) {
-  let s = String(texto || "");
-  // No quitamos comas ni puntos, los convertimos en pausas reales
-  s = s.replace(/\.\.\./g, '<break time="1200ms"/>');
-  s = s.replace(/\.\./g, '<break time="900ms"/>');
-  s = s.replace(/\?/g, '<break time="600ms"/>');
-  s = s.replace(/!/g, '<break time="600ms"/>');
-  s = s.replace(/\./g, '<break time="650ms"/>');
-  s = s.replace(/,/g, '<break time="350ms"/>');
-  // Si ya tiene emphasis, lo dejamos, si no, lo envolvemos en speak
-  if (s.includes("<emphasis") || s.includes("<break")) {
-    s = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="es-MX">' + s + '</speak>';
-  }
-  return s;
-}
-function aplicarEnfasis(texto) {
-  let s = String(texto || "");
-  // **palabra** -> énfasis fuerte
-  s = s.replace(/\*\*(.+?)\*\*/g, '<emphasis level="strong">$1</emphasis>');
-  // *palabra* -> énfasis moderado
-  s = s.replace(/\*(.+?)\*/g, '<emphasis level="moderate">$1</emphasis>');
-  // PALABRAS EN MAYUSCULAS de 3+ letras -> énfasis
-  s = s.replace(/\b([A-ZÁÉÍÓÚÑ]{3,})\b/g, '<emphasis level="strong">$1</emphasis>');
   return s;
 }
 function limpiar(texto) {
