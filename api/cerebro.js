@@ -132,6 +132,11 @@ export default async function handler(req,res){
  if(req.method==="OPTIONS") return res.status(200).end();
  let {prompt, historial=[], skill, agent} = req.body||{};
   prompt = limpiaEntradaBF(prompt);
+  const lowImg = String(prompt||'').toLowerCase();
+  if((lowImg.includes('genera') && lowImg.includes('imagen')) || lowImg.includes('crea una imagen') || lowImg.includes('haz una imagen') || lowImg.includes('dibujame') || lowImg.includes('imagen de')){
+    const img = generaImagenBF(prompt);
+    return res.status(200).json({cerebro:'BF Imagen + Flux', text:'Listo, ya te genere la imagen..', imagen: img.url, url: img.url, prompt: img.prompt});
+  }
   if (typeof esPeligroso === 'function' && esPeligroso(prompt)) { return res.status(400).json({ok:false, error:'Prompt contiene contenido prohibido'}); }
  if(!prompt) return res.status(200).json({text:"Escribe algo", cerebro:"BF x13"});
  const key = (process.env.GROQ_API_KEY||"").trim();
