@@ -13,6 +13,21 @@ const MAX_CACHE = 100;
 const MAX_CACHE_BYTES = 50 * 1024 * 1024;
 let CACHE_BYTES = 0;
 
+function respetarPuntuacion(texto) {
+  let s = String(texto || "");
+  // No quitamos comas ni puntos, los convertimos en pausas reales
+  s = s.replace(/\.\.\./g, '<break time="800ms"/>');
+  s = s.replace(/\.\./g, '<break time="600ms"/>');
+  s = s.replace(/\?/g, '<break time="400ms"/>');
+  s = s.replace(/!/g, '<break time="400ms"/>');
+  s = s.replace(/\./g, '<break time="450ms"/>');
+  s = s.replace(/,/g, '<break time="250ms"/>');
+  // Si ya tiene emphasis, lo dejamos, si no, lo envolvemos en speak
+  if (s.includes("<emphasis") || s.includes("<break")) {
+    s = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="es-MX">' + s + '</speak>';
+  }
+  return s;
+}
 function aplicarEnfasis(texto) {
   let s = String(texto || "");
   // **palabra** -> énfasis fuerte
@@ -47,7 +62,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    let texto = aplicarEnfasis(limpiar(body.texto || body.prompt || body.text || ""));
+    let texto = respetarPuntuacion(aplicarEnfasis(limpiar(body.texto || body.prompt || body.text || "")));
     const key = crypto.createHash("sha256").update(texto).digest("hex");
     let cached = CACHE.get(key) || null;
     if (!cached) { try { cached = await redisGetBF(key); if (cached) { CACHE.set(key, cached); CACHE_BYTES += cached.length; } } catch(_) {} }
