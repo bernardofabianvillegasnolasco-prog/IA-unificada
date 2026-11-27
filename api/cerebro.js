@@ -120,6 +120,7 @@ function hookPost(text){
  return t2;
 }
 function generaImagenBF(prompt){ const limpio = String(prompt||'').replace(/genera la imagen de|genera una imagen de|genera imagen|genera|crea una imagen de|crea una imagen|haz una imagen de|haz una imagen|dibujame una imagen de|dibujame|dibuja|imagen de|imagen/gi,'').replace(/\s+/g,' ').trim().slice(0,500) || prompt; const seed = Math.floor(Math.random()*1000000); const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(limpio) + '?width=1024&height=1024&seed=' + seed + '&model=flux&nologo=true&private=true&enhance=false'; return {url, prompt: limpio}; }
+import { consultaRAE, extraePalabraDiccionario } from './diccionario.js';
 export default async function handler(req,res){
  res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("X-Content-Type-Options","nosniff");
@@ -132,6 +133,14 @@ export default async function handler(req,res){
  if(req.method==="OPTIONS") return res.status(200).end();
  let {prompt, historial=[], skill, agent} = req.body||{};
   prompt = limpiaEntradaBF(prompt);
+  const palabraRAE = extraePalabraDiccionario(prompt);
+  if(palabraRAE){
+    const rae = await consultaRAE(palabraRAE);
+    if(rae){
+      const textoRAE = 'Según la Real Academia Española, ' + rae.palabra + ' significa: ' + rae.definiciones.map((d,i)=>(i+1)+'. '+d).join(' ') + (rae.etimologia ? ' Etimología: ' + rae.etimologia : '');
+      return res.status(200).json({cerebro:'BF + RAE', text:textoRAE, rae:rae});
+    }
+  }
   const lowImg = String(prompt||'').toLowerCase().trim();
   const esPedidoImagen = lowImg.startsWith('genera') || lowImg.startsWith('crea') || lowImg.startsWith('haz') || lowImg.startsWith('dibuja') || lowImg.startsWith('dibujame') || lowImg.includes('genera una imagen') || lowImg.includes('genera la imagen') || lowImg.includes('imagen de');
   if(esPedidoImagen){
